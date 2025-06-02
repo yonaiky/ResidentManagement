@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Table, 
@@ -33,102 +33,50 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
-// Dummy data for residents
-const residentData = [
-  {
-    id: 1,
-    name: "John Doe",
-    cedula: "V-12345678",
-    phone: "+58 412-1234567",
-    address: "Calle Principal #123, Caracas",
-    paymentStatus: "paid",
-    lastPaymentDate: new Date("2023-04-05"),
-    nextPaymentDate: new Date("2023-05-05"),
-    tokensCount: 2,
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    cedula: "V-87654321",
-    phone: "+58 414-7654321",
-    address: "Avenida Libertador #456, Caracas",
-    paymentStatus: "pending",
-    lastPaymentDate: new Date("2023-03-05"),
-    nextPaymentDate: new Date("2023-04-05"),
-    tokensCount: 1,
-  },
-  {
-    id: 3,
-    name: "Robert Johnson",
-    cedula: "V-23456789",
-    phone: "+58 416-2345678",
-    address: "Calle Bolívar #789, Maracaibo",
-    paymentStatus: "overdue",
-    lastPaymentDate: new Date("2023-02-05"),
-    nextPaymentDate: new Date("2023-03-05"),
-    tokensCount: 3,
-  },
-  {
-    id: 4,
-    name: "Maria Garcia",
-    cedula: "V-34567890",
-    phone: "+58 424-3456789",
-    address: "Avenida Las Mercedes #101, Valencia",
-    paymentStatus: "paid",
-    lastPaymentDate: new Date("2023-04-10"),
-    nextPaymentDate: new Date("2023-05-10"),
-    tokensCount: 1,
-  },
-  {
-    id: 5,
-    name: "James Wilson",
-    cedula: "V-45678901",
-    phone: "+58 412-4567890",
-    address: "Calle La Pastora #202, Barquisimeto",
-    paymentStatus: "pending",
-    lastPaymentDate: new Date("2023-03-15"),
-    nextPaymentDate: new Date("2023-04-15"),
-    tokensCount: 2,
-  },
-  {
-    id: 6,
-    name: "Patricia Lee",
-    cedula: "V-56789012",
-    phone: "+58 414-5678901",
-    address: "Avenida 5 de Julio #303, Maracaibo",
-    paymentStatus: "overdue",
-    lastPaymentDate: new Date("2023-01-20"),
-    nextPaymentDate: new Date("2023-02-20"),
-    tokensCount: 1,
-  },
-  {
-    id: 7,
-    name: "Michael Brown",
-    cedula: "V-67890123",
-    phone: "+58 416-6789012",
-    address: "Calle Sucre #404, Ciudad Bolívar",
-    paymentStatus: "paid",
-    lastPaymentDate: new Date("2023-04-25"),
-    nextPaymentDate: new Date("2023-05-25"),
-    tokensCount: 2,
-  },
-  {
-    id: 8,
-    name: "Elizabeth Davis",
-    cedula: "V-78901234",
-    phone: "+58 424-7890123",
-    address: "Avenida Principal #505, Mérida",
-    paymentStatus: "pending",
-    lastPaymentDate: new Date("2023-03-30"),
-    nextPaymentDate: new Date("2023-04-30"),
-    tokensCount: 1,
-  },
-];
+type Resident = {
+  id: number;
+  name: string;
+  cedula: string;
+  phone: string;
+  address: string;
+  paymentStatus: string;
+  lastPaymentDate: string | null;
+  nextPaymentDate: string | null;
+  tokens: any[];
+  payments: any[];
+  notifications: any[];
+};
 
 export function ResidentsTable() {
-  const [residents] = useState(residentData);
+  const { toast } = useToast();
+  const [residents, setResidents] = useState<Resident[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchResidents();
+  }, []);
+
+  async function fetchResidents() {
+    try {
+      const response = await fetch('/api/residents');
+      if (!response.ok) {
+        throw new Error('Error fetching residents');
+      }
+      const data = await response.json();
+      setResidents(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los residentes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const filteredResidents = residents.filter(
     (resident) =>
@@ -145,7 +93,7 @@ export function ResidentsTable() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search residents..."
+            placeholder="Buscar residentes..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -157,87 +105,101 @@ export function ResidentsTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Cedula</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Payment Status</TableHead>
-              <TableHead>Next Payment</TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Cédula</TableHead>
+              <TableHead>Teléfono</TableHead>
+              <TableHead>Estado de Pago</TableHead>
+              <TableHead>Próximo Pago</TableHead>
               <TableHead>Tokens</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredResidents.map((resident) => (
-              <TableRow key={resident.id}>
-                <TableCell className="font-medium">{resident.name}</TableCell>
-                <TableCell>{resident.cedula}</TableCell>
-                <TableCell>{resident.phone}</TableCell>
-                <TableCell>
-                  {resident.paymentStatus === "paid" ? (
-                    <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Paid
-                    </Badge>
-                  ) : resident.paymentStatus === "pending" ? (
-                    <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
-                      <Clock className="mr-1 h-3 w-3" />
-                      Pending
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                      <AlertCircle className="mr-1 h-3 w-3" />
-                      Overdue
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {resident.nextPaymentDate
-                    ? format(resident.nextPaymentDate, "MMM dd, yyyy")
-                    : "N/A"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="font-mono">
-                    {resident.tokensCount}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/residents/${resident.id}`}>
-                          <Eye className="mr-2 h-4 w-4" /> View details
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/residents/${resident.id}/edit`}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/residents/${resident.id}/tokens`}>
-                          <CreditCard className="mr-2 h-4 w-4" /> Manage tokens
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/residents/${resident.id}/payments`}>
-                          <UserCog className="mr-2 h-4 w-4" /> Payment history
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  Cargando residentes...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredResidents.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  No se encontraron residentes
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredResidents.map((resident) => (
+                <TableRow key={resident.id}>
+                  <TableCell className="font-medium">{resident.name}</TableCell>
+                  <TableCell>{resident.cedula}</TableCell>
+                  <TableCell>{resident.phone}</TableCell>
+                  <TableCell>
+                    {resident.paymentStatus === "paid" ? (
+                      <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                        Pagado
+                      </Badge>
+                    ) : resident.paymentStatus === "pending" ? (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
+                        <Clock className="mr-1 h-3 w-3" />
+                        Pendiente
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        Vencido
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {resident.nextPaymentDate
+                      ? format(new Date(resident.nextPaymentDate), "dd/MM/yyyy")
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-mono">
+                      {resident.tokens.length}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Abrir menú</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/residents/${resident.id}`}>
+                            <Eye className="mr-2 h-4 w-4" /> Ver detalles
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/residents/${resident.id}/edit`}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/residents/${resident.id}/tokens`}>
+                            <CreditCard className="mr-2 h-4 w-4" /> Gestionar tokens
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/residents/${resident.id}/payments`}>
+                            <UserCog className="mr-2 h-4 w-4" /> Historial de pagos
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
