@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Resident {
+  id              Int           @id @default(autoincrement())
+  name            String
+  cedula          String        @unique
+  phone           String
+  address         String
+  paymentStatus   String        @default("pending")
+  lastPaymentDate DateTime?
+  nextPaymentDate DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  tokens          Token[]
+  notifications   Notification[]
+  payments        Payment[]
+}
+
+model Token {
+  id              Int           @id @default(autoincrement())
+  name            String
+  status          String        @default("active")
+  paymentStatus   String        @default("pending")
+  lastPaymentDate DateTime?
+  nextPaymentDate DateTime?
+  residentId      Int
+  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  amount          Float
+  status          String        @default("pending")
+  paymentDate     DateTime?
+  dueDate         DateTime?
+  residentId      Int
+  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Notification {
+  id              Int           @id @default(autoincrement())
+  message         String
+  type            String        @default("info")
+  read            Boolean       @default(false)
+  residentId      Int
+  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+}
