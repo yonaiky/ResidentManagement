@@ -26,12 +26,16 @@ export async function POST(request: Request) {
     const token = await prisma.token.create({
       data: {
         name,
-        residentId,
+        residentId: parseInt(residentId),
+      },
+      include: {
+        resident: true,
       },
     });
 
     return NextResponse.json(token, { status: 201 });
   } catch (error) {
+    console.error('Error creating token:', error);
     return NextResponse.json({ error: 'Error creating token' }, { status: 500 });
   }
 }

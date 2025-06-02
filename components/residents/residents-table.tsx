@@ -33,13 +33,21 @@ import {
   UserCog,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import { es } from "date-fns/locale";
+import { AddPaymentDialog } from "./add-payment-dialog";
+import { PaymentHistoryDialog } from "./payment-history-dialog";
+import { BulkUploadDialog } from "./bulk-upload-dialog";
+import { SendWhatsappDialog } from "./send-whatsapp-dialog";
 
 type Resident = {
   id: number;
   name: string;
+  apellido: string;
   cedula: string;
+  noRegistro: string;
   phone: string;
   address: string;
   paymentStatus: string;
@@ -48,6 +56,7 @@ type Resident = {
   tokens: any[];
   payments: any[];
   notifications: any[];
+  createdAt: Date;
 };
 
 export function ResidentsTable() {
@@ -55,6 +64,7 @@ export function ResidentsTable() {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetchResidents();
@@ -87,6 +97,58 @@ export function ResidentsTable() {
       resident.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este residente?")) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/residents?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al eliminar el residente");
+      }
+
+      router.refresh();
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getDaysRemaining = (nextPaymentDate: string | null) => {
+    if (!nextPaymentDate) return null;
+    const today = new Date();
+    const due = new Date(nextPaymentDate);
+    const days = differenceInDays(due, today);
+    return days;
+  };
+
+  const getDaysRemainingBadge = (paymentStatus: string, nextPaymentDate: string | null) => {
+    if (paymentStatus !== "pending" || !nextPaymentDate) return null;
+    
+    const days = getDaysRemaining(nextPaymentDate);
+    if (days === null) return null;
+
+    if (days < 0) {
+      return (
+        <Badge variant="destructive" className="ml-2">
+          Vencido
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="outline" className="ml-2">
+        {days} {days === 1 ? "día" : "días"} restantes
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -100,6 +162,7 @@ export function ResidentsTable() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <BulkUploadDialog />
       </div>
 
       <div className="rounded-md border">
@@ -107,7 +170,9 @@ export function ResidentsTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
+              <TableHead>Apellido</TableHead>
               <TableHead>Cédula</TableHead>
+              <TableHead>No. Registro</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Estado de Pago</TableHead>
               <TableHead>Próximo Pago</TableHead>
@@ -118,13 +183,13 @@ export function ResidentsTable() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={9} className="text-center">
                   Cargando residentes...
                 </TableCell>
               </TableRow>
             ) : filteredResidents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={9} className="text-center">
                   No se encontraron residentes
                 </TableCell>
               </TableRow>
@@ -132,7 +197,9 @@ export function ResidentsTable() {
               filteredResidents.map((resident) => (
                 <TableRow key={resident.id}>
                   <TableCell className="font-medium">{resident.name}</TableCell>
+                  <TableCell>{resident.apellido}</TableCell>
                   <TableCell>{resident.cedula}</TableCell>
+                  <TableCell>{resident.noRegistro}</TableCell>
                   <TableCell>{resident.phone}</TableCell>
                   <TableCell>
                     {resident.paymentStatus === "paid" ? (
@@ -153,9 +220,18 @@ export function ResidentsTable() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {resident.nextPaymentDate
-                      ? format(new Date(resident.nextPaymentDate), "dd/MM/yyyy")
-                      : "N/A"}
+                    <div className="flex items-center">
+                      {resident.nextPaymentDate ? (
+                        <>
+                          {format(new Date(resident.nextPaymentDate), "PPP", {
+                            locale: es,
+                          })}
+                          {getDaysRemainingBadge(resident.paymentStatus, resident.nextPaymentDate)}
+                        </>
+                      ) : (
+                        "No establecido"
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="font-mono">
@@ -163,40 +239,36 @@ export function ResidentsTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menú</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}`}>
-                            <Eye className="mr-2 h-4 w-4" /> Ver detalles
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}/edit`}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}/tokens`}>
-                            <Key className="mr-2 h-4 w-4" /> Gestionar Tokens
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}/payments`}>
-                            <UserCog className="mr-2 h-4 w-4" /> Historial de pagos
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex justify-end gap-2">
+                      <PaymentHistoryDialog residentId={resident.id} residentName={resident.name} />
+                      <AddPaymentDialog residentId={resident.id} residentName={resident.name} />
+                      <SendWhatsappDialog residentId={resident.id} residentName={resident.name} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/residents/${resident.id}`)}
+                          >
+                            Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/residents/${resident.id}/edit`)}
+                          >
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/tokens/new?residentId=${resident.id}`)}
+                          >
+                            Agregar Token
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

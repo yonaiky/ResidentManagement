@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -34,18 +34,24 @@ import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
+    message: "El nombre debe tener al menos 2 caracteres",
   }),
   residentId: z.string().min(1, {
-    message: "Please select a resident.",
+    message: "Por favor seleccione un residente",
   }),
 });
+
+type Resident = {
+  id: number;
+  name: string;
+  cedula: string;
+};
 
 export default function NewTokenPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [residents, setResidents] = useState([]);
+  const [residents, setResidents] = useState<Resident[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,6 +60,27 @@ export default function NewTokenPage() {
       residentId: "",
     },
   });
+
+  useEffect(() => {
+    fetchResidents();
+  }, []);
+
+  async function fetchResidents() {
+    try {
+      const response = await fetch('/api/residents');
+      if (!response.ok) {
+        throw new Error('Error al cargar los residentes');
+      }
+      const data = await response.json();
+      setResidents(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los residentes",
+        variant: "destructive",
+      });
+    }
+  }
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     try {
@@ -67,12 +94,12 @@ export default function NewTokenPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Error creating token");
+        throw new Error("Error al crear el token");
       }
 
       toast({
-        title: "Success",
-        description: "Token created successfully",
+        title: "Éxito",
+        description: "Token creado exitosamente",
       });
 
       router.push("/tokens");
@@ -80,7 +107,7 @@ export default function NewTokenPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "There was an error creating the token",
+        description: "Hubo un error al crear el token",
         variant: "destructive",
       });
     } finally {
@@ -91,17 +118,17 @@ export default function NewTokenPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">New Token</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Nuevo Token</h1>
         <p className="text-muted-foreground">
-          Create a new token and assign it to a resident
+          Crea un nuevo token y asígnalo a un residente
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Token Information</CardTitle>
+          <CardTitle>Información del Token</CardTitle>
           <CardDescription>
-            Enter the details for the new token
+            Ingresa los detalles para el nuevo token
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,9 +139,9 @@ export default function NewTokenPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Token Name</FormLabel>
+                    <FormLabel>Nombre del Token</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter token name" {...field} />
+                      <Input placeholder="Ingrese el nombre del token" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,20 +153,20 @@ export default function NewTokenPage() {
                 name="residentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Resident</FormLabel>
+                    <FormLabel>Residente</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a resident" />
+                          <SelectValue placeholder="Seleccione un residente" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {residents.map((resident: any) => (
+                        {residents.map((resident) => (
                           <SelectItem key={resident.id} value={resident.id.toString()}>
-                            {resident.name}
+                            {resident.name} - {resident.cedula}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -155,10 +182,10 @@ export default function NewTokenPage() {
                   variant="outline"
                   onClick={() => router.back()}
                 >
-                  Cancel
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating..." : "Create Token"}
+                  {isLoading ? "Creando..." : "Crear Token"}
                 </Button>
               </div>
             </form>

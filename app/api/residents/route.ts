@@ -12,10 +12,17 @@ export async function GET() {
         payments: true,
         notifications: true,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
     return NextResponse.json(residents);
   } catch (error) {
-    return NextResponse.json({ error: 'Error fetching residents' }, { status: 500 });
+    console.error("Error fetching residents:", error);
+    return NextResponse.json(
+      { error: "Error al obtener los residentes" },
+      { status: 500 }
+    );
   }
 }
 
@@ -23,43 +30,73 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, cedula, phone, address } = body;
+    const { name, cedula, noRegistro, phone, address } = body;
 
     const resident = await prisma.resident.create({
       data: {
         name,
         cedula,
+        noRegistro,
         phone,
         address,
+        paymentStatus: "pending",
+        nextPaymentDate: new Date(new Date().getFullYear(), new Date().getMonth(), 30),
       },
     });
 
     return NextResponse.json(resident, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Error creating resident' }, { status: 500 });
+    console.error("Error creating resident:", error);
+    return NextResponse.json(
+      { error: "Error al crear el residente" },
+      { status: 500 }
+    );
   }
 }
 
 // PUT update resident
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { id, name, cedula, phone, address, paymentStatus } = body;
+    console.log("PUT /api/residents received.");
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    console.log("Resident ID from params:", id);
 
+    const body = await request.json();
+    console.log("Request body:", body);
+
+    const { name, apellido, cedula, noRegistro, phone, address, whatsappConsent } = body;
+
+    if (!id) {
+      console.error("Error: ID is required for PUT request.");
+      return NextResponse.json(
+        { error: "ID is required" },
+        { status: 400 }
+      );
+    }
+
+    console.log("Attempting to update resident with ID:", id);
     const resident = await prisma.resident.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name,
+        apellido,
         cedula,
+        noRegistro,
         phone,
         address,
-        paymentStatus,
+        whatsappConsent,
       },
     });
 
+    console.log("Resident updated successfully:", resident);
     return NextResponse.json(resident);
   } catch (error) {
-    return NextResponse.json({ error: 'Error updating resident' }, { status: 500 });
+    console.error("Error in PUT /api/residents:", error);
+    return NextResponse.json(
+      { error: "Error al actualizar el residente" },
+      { status: 500 }
+    );
   }
 }
 
