@@ -26,6 +26,7 @@ import {
   CreditCard,
   Edit,
   Eye,
+  Key,
   MoreHorizontal,
   Search,
   Trash2,
@@ -182,7 +183,7 @@ export function ResidentsTable() {
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/residents/${resident.id}/tokens`}>
-                            <CreditCard className="mr-2 h-4 w-4" /> Gestionar tokens
+                            <Key className="mr-2 h-4 w-4" /> Gestionar Tokens
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>

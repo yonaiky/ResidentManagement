@@ -17,22 +17,22 @@ export default function TokensPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tokens</h1>
           <p className="text-muted-foreground">
-            Manage all tokens and their associated residents
+            Gestiona todos los tokens y sus residentes asociados
           </p>
         </div>
         <Link href="/tokens/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Add Token
+            Agregar Token
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Tokens</CardTitle>
+          <CardTitle>Todos los Tokens</CardTitle>
           <CardDescription>
-            A list of all tokens with their status and payment information
+            Lista de todos los tokens con su estado e información de pago
           </CardDescription>
         </CardHeader>
         <CardContent>
