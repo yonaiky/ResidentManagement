@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Prevent multiple instances of Prisma Client in development
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // GET all tokens
 export async function GET() {
@@ -13,7 +18,14 @@ export async function GET() {
     });
     return NextResponse.json(tokens);
   } catch (error) {
-    return NextResponse.json({ error: 'Error fetching tokens' }, { status: 500 });
+    console.error('Error fetching tokens:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error fetching tokens',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -23,16 +35,33 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, residentId } = body;
 
+    if (!name || !residentId) {
+      return NextResponse.json(
+        { error: 'Name and residentId are required' },
+        { status: 400 }
+      );
+    }
+
     const token = await prisma.token.create({
       data: {
         name,
-        residentId,
+        residentId: parseInt(residentId),
+      },
+      include: {
+        resident: true,
       },
     });
 
     return NextResponse.json(token, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Error creating token' }, { status: 500 });
+    console.error('Error creating token:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error creating token',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -42,18 +71,35 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { id, name, status, paymentStatus } = body;
 
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
     const token = await prisma.token.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name,
         status,
         paymentStatus,
       },
+      include: {
+        resident: true,
+      },
     });
 
     return NextResponse.json(token);
   } catch (error) {
-    return NextResponse.json({ error: 'Error updating token' }, { status: 500 });
+    console.error('Error updating token:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error updating token',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -64,7 +110,10 @@ export async function DELETE(request: Request) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
     }
 
     await prisma.token.delete({
@@ -73,6 +122,13 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: 'Token deleted successfully' });
   } catch (error) {
-    return NextResponse.json({ error: 'Error deleting token' }, { status: 500 });
+    console.error('Error deleting token:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error deleting token',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 } 
