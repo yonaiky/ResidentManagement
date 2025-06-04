@@ -45,6 +45,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { PaymentForm } from "@/components/payments/PaymentForm";
 
 type Resident = {
   id: number;
@@ -68,6 +70,8 @@ export function ResidentsTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
 
   useEffect(() => {
     fetchResidents();
@@ -240,6 +244,14 @@ export function ResidentsTable() {
                             <UserCog className="mr-2 h-4 w-4" /> Historial de pagos
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedResident(resident);
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" /> Registrar Pago
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
@@ -256,6 +268,19 @@ export function ResidentsTable() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent>
+          <DialogTitle>Registrar Pago</DialogTitle>
+          {selectedResident && (
+            <PaymentForm
+              resident={selectedResident}
+              onSuccess={fetchResidents}
+              onClose={() => setShowPaymentDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!residentToDelete} onOpenChange={() => setResidentToDelete(null)}>
         <AlertDialogContent>
