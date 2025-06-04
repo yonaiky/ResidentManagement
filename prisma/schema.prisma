@@ -15,6 +15,7 @@ model Resident {
   name            String
   lastName        String
   cedula          String        @unique
+  noRegistro      String?       @unique @map("NoRegistro")
   phone           String
   address         String
   paymentStatus   String        @default("pending")

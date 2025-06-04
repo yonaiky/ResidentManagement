@@ -18,6 +18,18 @@ export async function GET() {
         notifications: true,
       },
     });
+
+    // Actualizar el estado de pago de los residentes
+    const today = new Date();
+    for (const resident of residents) {
+      if (resident.nextPaymentDate && new Date(resident.nextPaymentDate) < today && resident.paymentStatus === 'pending') {
+        await prisma.resident.update({
+          where: { id: resident.id },
+          data: { paymentStatus: 'overdue' },
+        });
+      }
+    }
+
     return NextResponse.json(residents);
   } catch (error) {
     console.error('Error fetching residents:', error);
@@ -34,16 +46,21 @@ export async function GET() {
 // POST new resident
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, lastName, cedula, phone, address } = body;
+    const { name, lastName, cedula, noRegistro, phone, address } = await request.json();
+
+    const today = new Date();
+    const nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), 30);
 
     const resident = await prisma.resident.create({
       data: {
         name,
         lastName,
         cedula,
+        noRegistro,
         phone,
         address,
+        paymentStatus: 'pending',
+        nextPaymentDate,
       },
     });
 
@@ -63,8 +80,10 @@ export async function POST(request: Request) {
 // PUT update resident
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { id, name, lastName, cedula, phone, address, paymentStatus } = body;
+    const { id, name, lastName, cedula, noRegistro, phone, address } = await request.json();
+
+    const today = new Date();
+    const nextPaymentDate = new Date(today.getFullYear(), today.getMonth(), 30);
 
     const resident = await prisma.resident.update({
       where: { id },
@@ -72,9 +91,11 @@ export async function PUT(request: Request) {
         name,
         lastName,
         cedula,
+        noRegistro,
         phone,
         address,
-        paymentStatus,
+        paymentStatus: 'pending',
+        nextPaymentDate,
       },
     });
 

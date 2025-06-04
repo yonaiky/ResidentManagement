@@ -13,19 +13,23 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { IMaskInput } from 'react-imask';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres'),
-  cedula: z.string().min(8, 'La cédula debe tener al menos 8 caracteres'),
-  phone: z.string().min(10, 'El teléfono debe tener al menos 10 caracteres'),
-  address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres'),
+  name: z.string().min(1, "El nombre es requerido"),
+  lastName: z.string().min(1, "El apellido es requerido"),
+  cedula: z.string().min(1, "La cédula es requerida"),
+  noRegistro: z.string().optional(),
+  phone: z.string().min(1, "El teléfono es requerido"),
+  address: z.string().min(1, "La dirección es requerida"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export function ResidentForm() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
@@ -34,6 +38,7 @@ export function ResidentForm() {
       name: '',
       lastName: '',
       cedula: '',
+      noRegistro: '',
       phone: '',
       address: '',
     },
@@ -54,14 +59,12 @@ export function ResidentForm() {
         throw new Error('Error al crear el residente');
       }
 
-      const result = await response.json();
-      
       toast({
         title: 'Residente creado',
         description: 'El residente ha sido creado exitosamente',
       });
 
-      form.reset();
+      router.push('/residents');
     } catch (error) {
       toast({
         title: 'Error',
@@ -111,7 +114,28 @@ export function ResidentForm() {
             <FormItem>
               <FormLabel>Cédula</FormLabel>
               <FormControl>
-                <Input placeholder="Número de cédula" {...field} />
+                <IMaskInput
+                  mask="000-0000000-0"
+                  unmask={true}
+                  onAccept={(value: string) => field.onChange(value)}
+                  placeholder="Número de cédula"
+                  value={field.value}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="noRegistro"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>No. Registro</FormLabel>
+              <FormControl>
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -125,7 +149,14 @@ export function ResidentForm() {
             <FormItem>
               <FormLabel>Teléfono</FormLabel>
               <FormControl>
-                <Input placeholder="Número de teléfono" {...field} />
+                <IMaskInput
+                  mask="(000) 000-0000"
+                  unmask={true}
+                  onAccept={(value: string) => field.onChange(value)}
+                  placeholder="Número de teléfono"
+                  value={field.value}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -146,9 +177,18 @@ export function ResidentForm() {
           )}
         />
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Creando...' : 'Crear Residente'}
-        </Button>
+        <div className="flex gap-4">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Creando...' : 'Crear Residente'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/residents')}
+          >
+            Cancelar
+          </Button>
+        </div>
       </form>
     </Form>
   );

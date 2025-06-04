@@ -35,12 +35,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Resident = {
   id: number;
   name: string;
   lastName: string;
   cedula: string;
+  noRegistro: string;
   phone: string;
   address: string;
   paymentStatus: string;
@@ -56,6 +67,7 @@ export function ResidentsTable() {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null);
 
   useEffect(() => {
     fetchResidents();
@@ -79,6 +91,38 @@ export function ResidentsTable() {
       setIsLoading(false);
     }
   }
+
+  const handleDelete = async (resident: Resident) => {
+    setResidentToDelete(resident);
+  };
+
+  const confirmDelete = async () => {
+    if (!residentToDelete) return;
+
+    try {
+      const response = await fetch(`/api/residents/${residentToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el residente');
+      }
+
+      setResidents(residents.filter(r => r.id !== residentToDelete.id));
+      toast({
+        title: "Residente eliminado",
+        description: "El residente ha sido eliminado exitosamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el residente",
+        variant: "destructive",
+      });
+    } finally {
+      setResidentToDelete(null);
+    }
+  };
 
   const filteredResidents = residents.filter(
     (resident) =>
@@ -107,6 +151,7 @@ export function ResidentsTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>No. Registro</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>Apellido</TableHead>
               <TableHead>Cédula</TableHead>
@@ -120,19 +165,20 @@ export function ResidentsTable() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={9} className="text-center">
                   Cargando residentes...
                 </TableCell>
               </TableRow>
             ) : filteredResidents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={9} className="text-center">
                   No se encontraron residentes
                 </TableCell>
               </TableRow>
             ) : (
               filteredResidents.map((resident) => (
                 <TableRow key={resident.id}>
+                  <TableCell>{resident.noRegistro}</TableCell>
                   <TableCell>{resident.name}</TableCell>
                   <TableCell>{resident.lastName}</TableCell>
                   <TableCell>{resident.cedula}</TableCell>
@@ -195,7 +241,10 @@ export function ResidentsTable() {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(resident)}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -207,6 +256,22 @@ export function ResidentsTable() {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={!!residentToDelete} onOpenChange={() => setResidentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el residente
+              {residentToDelete && ` ${residentToDelete.name} ${residentToDelete.lastName}`}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
