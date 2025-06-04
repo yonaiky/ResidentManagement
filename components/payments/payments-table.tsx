@@ -154,7 +154,7 @@ export function PaymentsTable() {
                 <TableCell className="font-medium">${payment.amount.toFixed(2)}</TableCell>
                 <TableCell>
                   {payment.status === "completed" ? (
-                    <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                    <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                       <CheckCircle className="mr-1 h-3 w-3" />
                       Completed
                     </Badge>

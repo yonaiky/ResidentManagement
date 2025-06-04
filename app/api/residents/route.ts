@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// Prevent multiple instances of Prisma Client in development
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // Obtener todos los residentes
 export async function GET() {
@@ -15,7 +20,14 @@ export async function GET() {
     });
     return NextResponse.json(residents);
   } catch (error) {
-    return NextResponse.json({ error: 'Error fetching residents' }, { status: 500 });
+    console.error('Error fetching residents:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error fetching residents',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -23,11 +35,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, cedula, phone, address } = body;
+    const { name, lastName, cedula, phone, address } = body;
 
     const resident = await prisma.resident.create({
       data: {
         name,
+        lastName,
         cedula,
         phone,
         address,
@@ -36,7 +49,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(resident, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Error creating resident' }, { status: 500 });
+    console.error('Error creating resident:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error creating resident',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -44,12 +64,13 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, cedula, phone, address, paymentStatus } = body;
+    const { id, name, lastName, cedula, phone, address, paymentStatus } = body;
 
     const resident = await prisma.resident.update({
       where: { id },
       data: {
         name,
+        lastName,
         cedula,
         phone,
         address,
@@ -59,7 +80,14 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(resident);
   } catch (error) {
-    return NextResponse.json({ error: 'Error updating resident' }, { status: 500 });
+    console.error('Error updating resident:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error updating resident',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
 }
 

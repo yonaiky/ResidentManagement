@@ -39,6 +39,7 @@ import { useToast } from "@/components/ui/use-toast";
 type Resident = {
   id: number;
   name: string;
+  lastName: string;
   cedula: string;
   phone: string;
   address: string;
@@ -107,6 +108,7 @@ export function ResidentsTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
+              <TableHead>Apellido</TableHead>
               <TableHead>Cédula</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Estado de Pago</TableHead>
@@ -118,20 +120,21 @@ export function ResidentsTable() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={8} className="text-center">
                   Cargando residentes...
                 </TableCell>
               </TableRow>
             ) : filteredResidents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={8} className="text-center">
                   No se encontraron residentes
                 </TableCell>
               </TableRow>
             ) : (
               filteredResidents.map((resident) => (
                 <TableRow key={resident.id}>
-                  <TableCell className="font-medium">{resident.name}</TableCell>
+                  <TableCell>{resident.name}</TableCell>
+                  <TableCell>{resident.lastName}</TableCell>
                   <TableCell>{resident.cedula}</TableCell>
                   <TableCell>{resident.phone}</TableCell>
                   <TableCell>

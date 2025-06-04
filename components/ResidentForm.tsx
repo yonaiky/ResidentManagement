@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 const formSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres'),
   cedula: z.string().min(8, 'La cédula debe tener al menos 8 caracteres'),
   phone: z.string().min(10, 'El teléfono debe tener al menos 10 caracteres'),
   address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres'),
@@ -31,6 +32,7 @@ export function ResidentForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      lastName: '',
       cedula: '',
       phone: '',
       address: '',
@@ -81,7 +83,21 @@ export function ResidentForm() {
             <FormItem>
               <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input placeholder="Nombre completo" {...field} />
+                <Input placeholder="Nombre" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Apellido</FormLabel>
+              <FormControl>
+                <Input placeholder="Apellido" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
