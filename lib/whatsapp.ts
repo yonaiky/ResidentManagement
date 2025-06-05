@@ -1,9 +1,4 @@
 import { Client, LocalAuth } from 'whatsapp-web.js';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-
-// Configurar ffmpeg
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 class WhatsAppService {
   private client: Client;
@@ -126,4 +121,4 @@ class WhatsAppService {
 }
 
 // Exportar una instancia única del servicio
-export const whatsappService = new WhatsAppService(); 
+export const whatsappService = new WhatsAppService();
