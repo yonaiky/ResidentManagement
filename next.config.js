@@ -8,6 +8,7 @@ const nextConfig = {
     domains: ['images.unsplash.com'],
     unoptimized: true,
   },
+  optimizeFonts: false,
 };
 
 module.exports = nextConfig;
