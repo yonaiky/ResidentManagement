@@ -263,9 +263,6 @@ export function ResidentsTable() {
                         }}>
                           <CreditCard className="mr-2 h-4 w-4" /> Registrar Pago
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSendAlert(resident)}>
-                          <Bell className="mr-2 h-4 w-4" /> Enviar Alerta de Pago
-                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/residents/${resident.id}/edit`}>
                             <Edit className="mr-2 h-4 w-4" /> Editar
