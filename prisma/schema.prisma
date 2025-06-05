@@ -17,6 +17,7 @@ model Resident {
   cedula          String        @unique
   noRegistro      String?       @unique @map("NoRegistro")
   phone           String
+  email           String?
   address         String
   paymentStatus   String        @default("pending")
   lastPaymentDate DateTime?
@@ -44,9 +45,11 @@ model Token {
 model Payment {
   id              Int           @id @default(autoincrement())
   amount          Float
-  status          String        @default("pending")
-  paymentDate     DateTime?
-  dueDate         DateTime?
+  status          String        @default("completed")
+  paymentDate     DateTime      @default(now())
+  dueDate         DateTime      // Fecha de vencimiento del mes
+  month           Int           @default(1)
+  year            Int           @default(2024)
   residentId      Int
   resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())

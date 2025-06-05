@@ -31,6 +31,7 @@ import {
   Search,
   Trash2,
   UserCog,
+  Bell,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PaymentForm } from "@/components/payments/PaymentForm";
+import { PaymentsList } from "@/components/payments/PaymentsList";
 
 type Resident = {
   id: number;
@@ -71,6 +73,7 @@ export function ResidentsTable() {
   const [isLoading, setIsLoading] = useState(true);
   const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showPayments, setShowPayments] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
 
   useEffect(() => {
@@ -125,6 +128,30 @@ export function ResidentsTable() {
       });
     } finally {
       setResidentToDelete(null);
+    }
+  };
+
+  const handleSendAlert = async (resident: Resident) => {
+    try {
+      const response = await fetch(`/api/residents/${resident.id}/send-alert`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar la alerta');
+      }
+
+      toast({
+        title: "Alerta enviada",
+        description: "La alerta de pago ha sido enviada correctamente",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la alerta",
+        variant: "destructive",
+      });
     }
   };
 
@@ -218,16 +245,26 @@ export function ResidentsTable() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
+                        <Button variant="ghost" className="h-8 w-8 p-0">
                           <span className="sr-only">Abrir menú</span>
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}`}>
-                            <Eye className="mr-2 h-4 w-4" /> Ver detalles
-                          </Link>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedResident(resident);
+                          setShowPayments(true);
+                        }}>
+                          Ver Pagos
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedResident(resident);
+                          setShowPaymentDialog(true);
+                        }}>
+                          <CreditCard className="mr-2 h-4 w-4" /> Registrar Pago
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSendAlert(resident)}>
+                          <Bell className="mr-2 h-4 w-4" /> Enviar Alerta de Pago
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/residents/${resident.id}/edit`}>
@@ -239,23 +276,18 @@ export function ResidentsTable() {
                             <Key className="mr-2 h-4 w-4" /> Gestionar Tokens
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/residents/${resident.id}/payments`}>
-                            <UserCog className="mr-2 h-4 w-4" /> Historial de pagos
-                          </Link>
-                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             setSelectedResident(resident);
-                            setShowPaymentDialog(true);
+                            setShowPayments(true);
                           }}
                         >
-                          <CreditCard className="mr-2 h-4 w-4" /> Registrar Pago
+                          <UserCog className="mr-2 h-4 w-4" /> Historial de pagos
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
                           onClick={() => handleDelete(resident)}
+                          className="text-red-600"
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                         </DropdownMenuItem>
@@ -269,13 +301,25 @@ export function ResidentsTable() {
         </Table>
       </div>
 
+      <Dialog open={showPayments} onOpenChange={setShowPayments}>
+        <DialogContent className="max-w-3xl">
+          <DialogTitle>Historial de Pagos</DialogTitle>
+          {selectedResident && (
+            <PaymentsList residentId={selectedResident.id} />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent>
           <DialogTitle>Registrar Pago</DialogTitle>
           {selectedResident && (
             <PaymentForm
               resident={selectedResident}
-              onSuccess={fetchResidents}
+              onSuccess={() => {
+                fetchResidents();
+                setShowPaymentDialog(false);
+              }}
               onClose={() => setShowPaymentDialog(false)}
             />
           )}
