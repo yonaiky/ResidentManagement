@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
+import { Footer } from '@/components/ui/footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
               <Sidebar />
               <main className="flex-1 p-6 pt-16 md:p-8 md:pt-16">{children}</main>
             </div>
+            <Footer />
           </div>
           <Toaster />
         </ThemeProvider>
