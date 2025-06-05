@@ -123,27 +123,7 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/50 dark:to-green-800/50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-              ${stats.currentMonthTotal.toFixed(2)}
-            </div>
-            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-              {stats.percentageChange >= 0 ? (
-                <ArrowUp className="h-3 w-3" />
-              ) : (
-                <ArrowDown className="h-3 w-3" />
-              )}
-              <span>{Math.abs(stats.percentageChange).toFixed(1)}% vs mes anterior</span>
-            </div>
-          </CardContent>
-        </Card>
-        
+
         <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/50 dark:to-amber-800/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pagos Pendientes</CardTitle>

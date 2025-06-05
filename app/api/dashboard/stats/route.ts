@@ -10,6 +10,49 @@ export async function GET() {
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
 
+    // Obtener residentes con pagos pendientes
+    const residentsWithPendingPayments = await prisma.resident.findMany({
+      where: {
+        OR: [
+          {
+            payments: {
+              some: {
+                status: {
+                  in: ["pending", "overdue"]
+                }
+              }
+            }
+          },
+          {
+            paymentStatus: "pending"
+          }
+        ]
+      },
+      include: {
+        payments: {
+          where: {
+            status: {
+              in: ["pending", "overdue"]
+            }
+          },
+          orderBy: {
+            dueDate: 'asc'
+          }
+        }
+      }
+    });
+
+    // Calcular estadísticas
+    const pendingPaymentsCount = residentsWithPendingPayments.length;
+    const pendingPaymentsTotal = residentsWithPendingPayments.reduce((total, resident) => {
+      // Si tiene pagos pendientes, sumar esos montos
+      if (resident.payments.length > 0) {
+        return total + resident.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      }
+      // Si no tiene pagos pero está pendiente, sumar el monto estándar (700)
+      return total + 700;
+    }, 0);
+
     // Total de residentes
     const totalResidents = await prisma.resident.count();
     const previousMonthResidents = await prisma.resident.count({
@@ -58,29 +101,6 @@ export async function GET() {
     const percentageChange = previousMonthTotal === 0 ? 100 : 
       ((currentMonthTotal - previousMonthTotal) / previousMonthTotal) * 100;
 
-    // Pagos pendientes - Corregido para incluir todos los pagos pendientes y vencidos
-    const pendingPayments = await prisma.payment.findMany({
-      where: {
-        OR: [
-          { status: "pending" },
-          { status: "overdue" }
-        ]
-      },
-      include: {
-        resident: {
-          select: {
-            name: true,
-            lastName: true,
-            cedula: true,
-            noRegistro: true
-          }
-        }
-      }
-    });
-
-    const pendingPaymentsCount = pendingPayments.length;
-    const pendingPaymentsTotal = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
-
     // Actividades recientes
     const recentActivities = await prisma.payment.findMany({
       take: 5,
@@ -120,7 +140,15 @@ export async function GET() {
         percentageChange,
         pendingPaymentsCount,
         pendingPaymentsTotal,
-        pendingPayments // Incluimos los pagos pendientes completos
+        pendingResidents: residentsWithPendingPayments.map(resident => ({
+          id: resident.id,
+          name: `${resident.name} ${resident.lastName}`,
+          cedula: resident.cedula,
+          noRegistro: resident.noRegistro,
+          amount: resident.payments.length > 0 ? resident.payments[0].amount : 700,
+          dueDate: resident.payments.length > 0 ? resident.payments[0].dueDate : resident.nextPaymentDate,
+          status: resident.payments.length > 0 ? resident.payments[0].status : "pending"
+        }))
       },
       activities: formattedActivities
     });

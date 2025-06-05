@@ -24,13 +24,12 @@ import { useToast } from "@/components/ui/use-toast";
 
 type PendingPayment = {
   id: number;
-  residentId: number;
-  residentName: string;
+  name: string;
+  cedula: string;
+  noRegistro: string;
   amount: number;
   dueDate: string;
   status: string;
-  noRegistro: string;
-  cedula: string;
 };
 
 export function PendingPayments() {
@@ -45,10 +44,10 @@ export function PendingPayments() {
 
   const fetchPendingPayments = async () => {
     try {
-      const res = await fetch('/api/payments/pending');
+      const res = await fetch('/api/dashboard/stats');
       if (!res.ok) throw new Error("Error al cargar los pagos pendientes");
       const data = await res.json();
-      setPayments(data);
+      setPayments(data.stats.pendingResidents);
     } catch (error) {
       toast({
         title: "Error",
@@ -62,9 +61,9 @@ export function PendingPayments() {
 
   const filteredPayments = payments.filter(
     (payment) =>
-      payment.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.noRegistro.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.cedula.toLowerCase().includes(searchQuery.toLowerCase())
+      payment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.cedula.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.noRegistro.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -95,7 +94,6 @@ export function PendingPayments() {
               <TableHead>No. Registro</TableHead>
               <TableHead>Monto</TableHead>
               <TableHead>Fecha de Vencimiento</TableHead>
-              <TableHead>Días de Atraso</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -113,10 +111,10 @@ export function PendingPayments() {
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <Link 
-                        href={`/residents/${payment.residentId}`}
+                        href={`/residents/${payment.id}`}
                         className="hover:underline"
                       >
-                        {payment.residentName}
+                        {payment.name}
                       </Link>
                     </div>
                   </TableCell>
@@ -125,15 +123,6 @@ export function PendingPayments() {
                   <TableCell className="font-medium">${payment.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     {format(new Date(payment.dueDate), "dd/MM/yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    {daysOverdue > 0 ? (
-                      <span className="text-red-500">{daysOverdue} días</span>
-                    ) : (
-                      <span className="text-amber-500">
-                        {Math.abs(daysOverdue)} días restantes
-                      </span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {daysOverdue > 0 ? (
@@ -150,7 +139,7 @@ export function PendingPayments() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/payments/${payment.id}`}>
+                      <Link href={`/residents/${payment.id}`}>
                         Ver detalles
                       </Link>
                     </Button>
