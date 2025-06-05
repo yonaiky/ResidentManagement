@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { 
   Bar, 
   BarChart, 
@@ -10,71 +11,44 @@ import {
   XAxis, 
   YAxis 
 } from "recharts";
+import { useToast } from "@/components/ui/use-toast";
 
-const data = [
-  {
-    name: "Jan",
-    total: 1800,
-    pending: 300,
-  },
-  {
-    name: "Feb",
-    total: 2200,
-    pending: 400,
-  },
-  {
-    name: "Mar",
-    total: 2400,
-    pending: 350,
-  },
-  {
-    name: "Apr",
-    total: 2800,
-    pending: 250,
-  },
-  {
-    name: "May",
-    total: 2900,
-    pending: 200,
-  },
-  {
-    name: "Jun",
-    total: 3000,
-    pending: 150,
-  },
-  {
-    name: "Jul",
-    total: 3200,
-    pending: 100,
-  },
-  {
-    name: "Aug",
-    total: 3500,
-    pending: 120,
-  },
-  {
-    name: "Sep",
-    total: 3700,
-    pending: 230,
-  },
-  {
-    name: "Oct",
-    total: 4000,
-    pending: 300,
-  },
-  {
-    name: "Nov",
-    total: 4500,
-    pending: 400,
-  },
-  {
-    name: "Dec",
-    total: 5000,
-    pending: 200,
-  },
-];
+type MonthlyData = {
+  name: string;
+  total: number;
+  pending: number;
+};
 
 export function Overview() {
+  const [data, setData] = useState<MonthlyData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchMonthlyStats();
+  }, []);
+
+  const fetchMonthlyStats = async () => {
+    try {
+      const res = await fetch('/api/dashboard/stats');
+      if (!res.ok) throw new Error("Error al cargar las estadísticas mensuales");
+      const monthlyData = await res.json();
+      setData(monthlyData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las estadísticas mensuales",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div>Cargando estadísticas...</div>;
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={data}>
@@ -100,13 +74,13 @@ export function Overview() {
         <Legend />
         <Bar
           dataKey="total"
-          name="Total Payments"
+          name="Pagos Totales"
           fill="hsl(var(--chart-1))"
           radius={[4, 4, 0, 0]}
         />
         <Bar
           dataKey="pending"
-          name="Pending Payments"
+          name="Pagos Pendientes"
           fill="hsl(var(--chart-2))"
           radius={[4, 4, 0, 0]}
         />

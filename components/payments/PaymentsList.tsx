@@ -14,6 +14,10 @@ type Payment = {
   status: string;
   createdAt: string;
   residentId: number;
+  residentName: string;
+  noRegistro: string;
+  monthName: string;
+  year: number;
 };
 
 export function PaymentsList({ residentId }: { residentId: number }) {
@@ -53,21 +57,25 @@ export function PaymentsList({ residentId }: { residentId: number }) {
       
       // Información del residente
       doc.setFontSize(12);
-      doc.text(`Residente ID: ${residentId}`, 20, 30);
+      if (payments.length > 0) {
+        doc.text(`Residente: ${payments[0].residentName}`, 20, 30);
+        doc.text(`No. Registro: ${payments[0].noRegistro}`, 20, 37);
+      }
       
       // Tabla de pagos
       const tableData = payments.map(payment => [
+        `${payment.monthName} ${payment.year}`,
         payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'Pendiente',
         payment.dueDate ? new Date(payment.dueDate).toLocaleDateString() : 'N/A',
         `$${payment.amount.toFixed(2)}`,
-        payment.status
+        payment.status === 'completed' ? 'Completado' : 'Pendiente'
       ]);
 
       console.log('Datos de la tabla:', tableData);
 
       autoTable(doc, {
-        startY: 40,
-        head: [['Fecha de Pago', 'Fecha de Vencimiento', 'Monto', 'Estado']],
+        startY: 45,
+        head: [['Período', 'Fecha de Pago', 'Fecha de Vencimiento', 'Monto', 'Estado']],
         body: tableData,
         theme: 'grid',
         styles: { fontSize: 10 },
@@ -125,6 +133,7 @@ export function PaymentsList({ residentId }: { residentId: number }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Período</TableHead>
             <TableHead>Fecha de Pago</TableHead>
             <TableHead>Fecha de Vencimiento</TableHead>
             <TableHead>Monto</TableHead>
@@ -134,15 +143,24 @@ export function PaymentsList({ residentId }: { residentId: number }) {
         <TableBody>
           {payments.map((payment) => (
             <TableRow key={payment.id}>
+              <TableCell>{`${payment.monthName} ${payment.year}`}</TableCell>
               <TableCell>{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'Pendiente'}</TableCell>
               <TableCell>{payment.dueDate ? new Date(payment.dueDate).toLocaleDateString() : 'N/A'}</TableCell>
               <TableCell>${payment.amount.toFixed(2)}</TableCell>
-              <TableCell>{payment.status}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  payment.status === 'completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {payment.status === 'completed' ? 'Completado' : 'Pendiente'}
+                </span>
+              </TableCell>
             </TableRow>
           ))}
           {payments.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center">
+              <TableCell colSpan={5} className="text-center">
                 No hay pagos registrados
               </TableCell>
             </TableRow>

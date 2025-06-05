@@ -8,10 +8,28 @@ export async function GET() {
   try {
     const payments = await prisma.payment.findMany({
       include: {
-        resident: true,
+        resident: {
+          select: {
+            name: true,
+            lastName: true,
+            cedula: true,
+            noRegistro: true
+          }
+        }
       },
     });
-    return NextResponse.json(payments);
+
+    // Transformar los datos para incluir información adicional
+    const formattedPayments = payments.map(payment => ({
+      ...payment,
+      residentName: `${payment.resident.name} ${payment.resident.lastName}`,
+      cedula: payment.resident.cedula,
+      noRegistro: payment.resident.noRegistro,
+      monthName: new Date(payment.year, payment.month - 1).toLocaleString('es', { month: 'long' }),
+      year: payment.year
+    }));
+
+    return NextResponse.json(formattedPayments);
   } catch (error) {
     return NextResponse.json({ error: 'Error fetching payments' }, { status: 500 });
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Table, 
@@ -32,91 +32,54 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
-// Dummy data for payments
-const paymentData = [
-  {
-    id: 1,
-    amount: 150.0,
-    status: "completed",
-    paymentDate: new Date("2023-04-05"),
-    dueDate: new Date("2023-04-05"),
-    residentId: 1,
-    residentName: "John Doe",
-  },
-  {
-    id: 2,
-    amount: 120.0,
-    status: "pending",
-    paymentDate: null,
-    dueDate: new Date("2023-04-10"),
-    residentId: 2,
-    residentName: "Jane Smith",
-  },
-  {
-    id: 3,
-    amount: 180.0,
-    status: "overdue",
-    paymentDate: null,
-    dueDate: new Date("2023-03-15"),
-    residentId: 3,
-    residentName: "Robert Johnson",
-  },
-  {
-    id: 4,
-    amount: 200.0,
-    status: "completed",
-    paymentDate: new Date("2023-04-03"),
-    dueDate: new Date("2023-04-05"),
-    residentId: 4,
-    residentName: "Maria Garcia",
-  },
-  {
-    id: 5,
-    amount: 150.0,
-    status: "pending",
-    paymentDate: null,
-    dueDate: new Date("2023-04-15"),
-    residentId: 5,
-    residentName: "James Wilson",
-  },
-  {
-    id: 6,
-    amount: 120.0,
-    status: "overdue",
-    paymentDate: null,
-    dueDate: new Date("2023-03-20"),
-    residentId: 6,
-    residentName: "Patricia Lee",
-  },
-  {
-    id: 7,
-    amount: 180.0,
-    status: "completed",
-    paymentDate: new Date("2023-03-30"),
-    dueDate: new Date("2023-04-01"),
-    residentId: 7,
-    residentName: "Michael Brown",
-  },
-  {
-    id: 8,
-    amount: 200.0,
-    status: "pending",
-    paymentDate: null,
-    dueDate: new Date("2023-04-20"),
-    residentId: 8,
-    residentName: "Elizabeth Davis",
-  },
-];
+type Payment = {
+  id: number;
+  amount: number;
+  status: string;
+  paymentDate: string | null;
+  dueDate: string | null;
+  residentId: number;
+  residentName: string;
+  cedula: string;
+  noRegistro: string;
+  monthName: string;
+  year: number;
+};
 
 export function PaymentsTable() {
-  const [payments] = useState(paymentData);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      const res = await fetch('/api/payments');
+      if (!res.ok) throw new Error("Error al cargar los pagos");
+      const data = await res.json();
+      setPayments(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los pagos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredPayments = payments.filter(
     (payment) =>
-      payment.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.status.toLowerCase().includes(searchQuery.toLowerCase())
+      (payment.residentName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (payment.status?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (payment.noRegistro?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -138,19 +101,21 @@ export function PaymentsTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Payment Date</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Resident</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Período</TableHead>
+              <TableHead>Monto</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha de Pago</TableHead>
+              <TableHead>Fecha de Vencimiento</TableHead>
+              <TableHead>Residente</TableHead>
+              <TableHead>Cédula</TableHead>
+              <TableHead>No. Registro</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredPayments.map((payment) => (
               <TableRow key={payment.id}>
-                <TableCell className="font-mono text-xs">#{payment.id}</TableCell>
+                <TableCell>{`${payment.monthName} ${payment.year}`}</TableCell>
                 <TableCell className="font-medium">${payment.amount.toFixed(2)}</TableCell>
                 <TableCell>
                   {payment.status === "completed" ? (
@@ -172,11 +137,13 @@ export function PaymentsTable() {
                 </TableCell>
                 <TableCell>
                   {payment.paymentDate
-                    ? format(payment.paymentDate, "MMM dd, yyyy")
-                    : "Not paid"}
+                    ? format(new Date(payment.paymentDate), "dd/MM/yyyy")
+                    : "No pagado"}
                 </TableCell>
                 <TableCell>
-                  {format(payment.dueDate, "MMM dd, yyyy")}
+                  {payment.dueDate
+                    ? format(new Date(payment.dueDate), "dd/MM/yyyy")
+                    : "N/A"}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -189,6 +156,8 @@ export function PaymentsTable() {
                     </Link>
                   </div>
                 </TableCell>
+                <TableCell>{payment.cedula}</TableCell>
+                <TableCell>{payment.noRegistro}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

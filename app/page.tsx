@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -17,8 +20,68 @@ import {
 import { Overview } from "@/components/dashboard/overview";
 import { RecentPayments } from "@/components/dashboard/recent-payments";
 import { PendingPayments } from "@/components/dashboard/pending-payments";
+import { useToast } from "@/components/ui/use-toast";
+import { format, formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+
+type DashboardStats = {
+  totalResidents: number;
+  newResidentsThisMonth: number;
+  activeTokens: number;
+  newTokensThisMonth: number;
+  currentMonthTotal: number;
+  percentageChange: number;
+  pendingPayments: number;
+  pendingPercentageChange: number;
+  pendingPaymentsCount: number;
+  pendingPaymentsTotal: number;
+};
+
+type Activity = {
+  id: number;
+  residentId: number;
+  residentName: string;
+  noRegistro: string;
+  amount: number;
+  paymentDate: string;
+};
 
 export default function Home() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const res = await fetch('/api/dashboard/stats');
+      if (!res.ok) throw new Error("Error al cargar los datos del dashboard");
+      const data = await res.json();
+      setStats(data.stats);
+      setActivities(data.activities);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos del dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div>Cargando dashboard...</div>;
+  }
+
+  if (!stats) {
+    return <div>No se pudieron cargar los datos</div>;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -35,10 +98,12 @@ export default function Home() {
             <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">124</div>
+            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+              {stats.totalResidents}
+            </div>
             <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <TrendingUp className="h-3 w-3" />
-              <span>+5 este mes</span>
+              <span>+{stats.newResidentsThisMonth} este mes</span>
             </div>
           </CardContent>
         </Card>
@@ -49,10 +114,12 @@ export default function Home() {
             <CreditCard className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">145</div>
+            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+              {stats.activeTokens}
+            </div>
             <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <Activity className="h-3 w-3" />
-              <span>+12 este mes</span>
+              <span>+{stats.newTokensThisMonth} este mes</span>
             </div>
           </CardContent>
         </Card>
@@ -63,10 +130,16 @@ export default function Home() {
             <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">$12,580</div>
+            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+              ${stats.currentMonthTotal.toFixed(2)}
+            </div>
             <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-              <ArrowUp className="h-3 w-3" />
-              <span>8.2% vs mes anterior</span>
+              {stats.percentageChange >= 0 ? (
+                <ArrowUp className="h-3 w-3" />
+              ) : (
+                <ArrowDown className="h-3 w-3" />
+              )}
+              <span>{Math.abs(stats.percentageChange).toFixed(1)}% vs mes anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -77,10 +150,11 @@ export default function Home() {
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">23</div>
-            <div className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
-              <ArrowUp className="h-3 w-3" />
-              <span>12% vs mes anterior</span>
+            <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+              {stats.pendingPaymentsCount}
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-400">
+              Total: ${stats.pendingPaymentsTotal.toFixed(2)}
             </div>
           </CardContent>
         </Card>
@@ -123,20 +197,25 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="flex items-center gap-4">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="flex items-center gap-4">
                       <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
                         <Calendar className="h-4 w-4 text-blue-700 dark:text-blue-300" />
                       </div>
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none">
-                          Pago recibido del Residente #{i * 1000 + 123}
+                          Pago recibido de {activity.residentName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Hace {i * 10} minutos
+                          {formatDistanceToNow(new Date(activity.paymentDate), { 
+                            addSuffix: true,
+                            locale: es 
+                          })}
                         </p>
                       </div>
-                      <div className="font-medium text-green-600 dark:text-green-400">${i * 100 + 50}</div>
+                      <div className="font-medium text-green-600 dark:text-green-400">
+                        ${activity.amount.toFixed(2)}
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -37,16 +37,6 @@ export default function Sidebar() {
       label: "Payments",
       icon: CreditCard,
     },
-    {
-      href: "/notifications",
-      label: "Notifications",
-      icon: Bell,
-    },
-    {
-      href: "/settings",
-      label: "Settings",
-      icon: Settings,
-    },
   ];
 
   return (

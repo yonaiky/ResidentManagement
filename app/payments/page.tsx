@@ -20,12 +20,6 @@ export default function PaymentsPage() {
             Manage all payment records and transactions
           </p>
         </div>
-        <Link href="/payments/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Record Payment
-          </Button>
-        </Link>
       </div>
 
       <Card>

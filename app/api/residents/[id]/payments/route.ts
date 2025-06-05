@@ -7,11 +7,30 @@ export async function GET(request: Request, { params }: { params: { id: string }
       where: {
         residentId: parseInt(params.id)
       },
+      include: {
+        resident: {
+          select: {
+            name: true,
+            lastName: true,
+            noRegistro: true
+          }
+        }
+      },
       orderBy: {
         createdAt: 'desc'
       }
     });
-    return NextResponse.json(payments);
+
+    // Transformar los datos para incluir información adicional
+    const formattedPayments = payments.map(payment => ({
+      ...payment,
+      residentName: `${payment.resident.name} ${payment.resident.lastName}`,
+      noRegistro: payment.resident.noRegistro,
+      monthName: new Date(payment.year, payment.month - 1).toLocaleString('es', { month: 'long' }),
+      year: payment.year
+    }));
+
+    return NextResponse.json(formattedPayments);
   } catch (error) {
     console.error('Error fetching payments:', error);
     return NextResponse.json({ error: "Error al obtener los pagos" }, { status: 500 });
