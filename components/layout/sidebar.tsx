@@ -7,14 +7,40 @@ import {
   Users, 
   Key, 
   CreditCard, 
-  Bell, 
-  Settings 
+  UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
+
+type User = {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
+  };
 
   const routes = [
     {
@@ -38,6 +64,15 @@ export default function Sidebar() {
       icon: CreditCard,
     },
   ];
+
+  // Add user management route for admins and managers
+  if (user && (user.role === 'admin' || user.role === 'manager')) {
+    routes.push({
+      href: "/users",
+      label: "Users",
+      icon: UserCog,
+    });
+  }
 
   return (
     <aside className="hidden w-64 flex-col border-r bg-background md:flex">
