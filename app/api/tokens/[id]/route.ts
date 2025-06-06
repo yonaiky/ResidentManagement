@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+const prismaClient = new PrismaClient();
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = await prisma.token.findUnique({
+    const token = await prismaClient.token.findUnique({
       where: { id: parseInt(params.id) },
       include: {
         resident: true,
@@ -39,7 +40,7 @@ export async function PUT(
     const body = await request.json();
     const { name, status, paymentStatus } = body;
 
-    const token = await prisma.token.update({
+    const token = await prismaClient.token.update({
       where: { id: parseInt(params.id) },
       data: {
         name,
@@ -62,14 +63,30 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.token.delete({
-      where: { id: parseInt(params.id) },
+    const tokenId = parseInt(params.id);
+
+    // Verificar si el token existe
+    const token = await prismaClient.token.findUnique({
+      where: { id: tokenId }
     });
 
-    return NextResponse.json({ message: "Token deleted successfully" });
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token no encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Eliminar el token
+    await prismaClient.token.delete({
+      where: { id: tokenId }
+    });
+
+    return NextResponse.json({ message: "Token eliminado exitosamente" });
   } catch (error) {
+    console.error('Error deleting token:', error);
     return NextResponse.json(
-      { error: "Error deleting token" },
+      { error: "Error al eliminar el token" },
       { status: 500 }
     );
   }

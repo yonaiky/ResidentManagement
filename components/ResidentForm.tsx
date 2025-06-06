@@ -58,7 +58,7 @@ export function ResidentForm() {
       if (!response.ok) {
         throw new Error('Error al crear el residente');
       }
-
+      
       toast({
         title: 'Residente creado',
         description: 'El residente ha sido creado exitosamente',
@@ -178,9 +178,9 @@ export function ResidentForm() {
         />
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Creando...' : 'Crear Residente'}
-          </Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Creando...' : 'Crear Residente'}
+        </Button>
           <Button
             type="button"
             variant="outline"
