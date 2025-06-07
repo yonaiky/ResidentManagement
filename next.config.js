@@ -9,6 +9,17 @@ const nextConfig = {
     unoptimized: true,
   },
   optimizeFonts: false,
+  experimental: {
+    serverActions: true,
+  },
+  webpack: (config, { isServer }) => {
+    // Optimizaciones de webpack
+    config.optimization = {
+      ...config.optimization,
+      minimize: true,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;
