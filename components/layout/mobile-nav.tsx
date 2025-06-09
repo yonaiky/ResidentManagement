@@ -7,7 +7,8 @@ import {
   Users, 
   Key, 
   CreditCard, 
-  UserCog
+  UserCog,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -71,6 +72,15 @@ export function MobileNav() {
       href: "/users",
       label: "Users",
       icon: UserCog,
+    });
+  }
+
+  // Add settings route for admins only
+  if (user && user.role === 'admin') {
+    routes.push({
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
     });
   }
 

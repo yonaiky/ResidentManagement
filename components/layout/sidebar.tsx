@@ -82,6 +82,16 @@ export default function Sidebar() {
     });
   }
 
+  // Add settings route for admins only
+  if (user && user.role === 'admin') {
+    routes.push({
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
+      description: "System configuration",
+    });
+  }
+
   return (
     <aside className="hidden w-72 flex-col border-r border-border/40 bg-muted/30 md:flex">
       <ScrollArea className="flex-1 pt-20">
