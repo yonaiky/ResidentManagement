@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-const prismaClient = new PrismaClient();
-
+// GET token by ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = await prismaClient.token.findUnique({
+    const token = await prisma.token.findUnique({
       where: { id: parseInt(params.id) },
       include: {
         resident: true,
@@ -25,8 +23,12 @@ export async function GET(
 
     return NextResponse.json(token);
   } catch (error) {
+    console.error('Error fetching token:', error);
     return NextResponse.json(
-      { error: "Error fetching token" },
+      { 
+        error: 'Error fetching token',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
       { status: 500 }
     );
   }
@@ -40,7 +42,7 @@ export async function PUT(
     const body = await request.json();
     const { name, status, paymentStatus } = body;
 
-    const token = await prismaClient.token.update({
+    const token = await prisma.token.update({
       where: { id: parseInt(params.id) },
       data: {
         name,
@@ -66,7 +68,7 @@ export async function DELETE(
     const tokenId = parseInt(params.id);
 
     // Verificar si el token existe
-    const token = await prismaClient.token.findUnique({
+    const token = await prisma.token.findUnique({
       where: { id: tokenId }
     });
 
@@ -78,7 +80,7 @@ export async function DELETE(
     }
 
     // Eliminar el token
-    await prismaClient.token.delete({
+    await prisma.token.delete({
       where: { id: tokenId }
     });
 

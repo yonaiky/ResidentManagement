@@ -29,7 +29,8 @@ import {
   Search,
   Trash2,
   User,
-  Key
+  Key,
+  XCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -46,12 +47,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditTokenModal } from "@/components/tokens/edit-token-modal";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Token = {
   id: number;
   name: string;
-  status: string;
-  paymentStatus: string;
+  status: "active" | "inactive";
+  paymentStatus: "paid" | "pending" | "overdue";
   lastPaymentDate: string | null;
   nextPaymentDate: string | null;
   resident: {
@@ -223,35 +225,10 @@ export function TokensTable() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {token.status === "active" ? (
-                          <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Activo
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                            <AlertCircle className="mr-1 h-3 w-3" />
-                            Inactivo
-                          </Badge>
-                        )}
+                        <StatusBadge status={token.status === "active" ? "active" : "inactive"} />
                       </TableCell>
                       <TableCell>
-                        {token.paymentStatus === "paid" ? (
-                          <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Pagado
-                          </Badge>
-                        ) : token.paymentStatus === "pending" ? (
-                          <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
-                            <Clock className="mr-1 h-3 w-3" />
-                            Pendiente
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                            <AlertCircle className="mr-1 h-3 w-3" />
-                            Vencido
-                          </Badge>
-                        )}
+                        <StatusBadge status={token.paymentStatus} />
                       </TableCell>
                       <TableCell>
                         {token.nextPaymentDate

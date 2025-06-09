@@ -1,69 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { whatsappService } from "@/lib/whatsapp";
 
-export async function GET() {
+export async function POST() {
   try {
     const today = new Date();
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
-    const currentDay = today.getDate();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    // Solo verificar si estamos después del día 5 del mes
-    if (currentDay <= 5) {
-      return NextResponse.json({ message: "No es necesario verificar pagos vencidos" });
-    }
-
-    // Buscar residentes con pagos pendientes
+    // Obtener residentes con pagos vencidos
     const residents = await prisma.resident.findMany({
       where: {
-        paymentStatus: 'pending',
-        nextPaymentDate: {
-          lt: new Date(currentYear, currentMonth, 5) // Fecha anterior al día 5 del mes actual
+        payments: {
+          none: {
+            paymentDate: {
+              gte: firstDayOfMonth,
+              lte: lastDayOfMonth
+            }
+          }
         }
       },
       include: {
-        payments: {
-          orderBy: {
-            paymentDate: 'desc'
-          },
-          take: 1
-        }
+        payments: true
       }
     });
 
-    // Actualizar estado de los residentes con pagos vencidos y enviar notificaciones
+    // Procesar cada residente
     for (const resident of residents) {
-      // Actualizar estado
-      await prisma.resident.update({
-        where: { id: resident.id },
-        data: {
-          paymentStatus: 'late'
-        }
-      });
-
-      // Enviar notificación por WhatsApp si tiene número de teléfono
-      if (resident.phone) {
-        try {
-          await whatsappService.sendPaymentOverdue(resident);
-          console.log(`Notificación enviada a ${resident.name} ${resident.lastName}`);
-        } catch (error) {
-          console.error(`Error al enviar notificación a ${resident.name} ${resident.lastName}:`, error);
-        }
-      }
+      // Aquí podrías implementar otras formas de notificación
+      // como email o notificaciones en la aplicación
+      console.log(`Pago vencido para: ${resident.name}`);
     }
 
-    return NextResponse.json({
+    return NextResponse.json({ 
       message: "Verificación de pagos vencidos completada",
-      updatedResidents: residents.length
+      count: residents.length
     });
   } catch (error) {
     console.error('Error al verificar pagos vencidos:', error);
     return NextResponse.json(
-      { 
-        error: "Error al verificar pagos vencidos",
-        details: error instanceof Error ? error.message : "Error desconocido"
-      },
+      { error: "Error al verificar pagos vencidos" },
       { status: 500 }
     );
   }

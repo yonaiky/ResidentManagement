@@ -1,55 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { whatsappService } from "@/lib/whatsapp";
 
-export async function GET() {
+export async function POST() {
   try {
     const today = new Date();
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    // Buscar residentes con pagos pendientes
+    // Obtener residentes con pagos pendientes
     const residents = await prisma.resident.findMany({
       where: {
-        paymentStatus: 'pending',
-        nextPaymentDate: {
-          gte: new Date(currentYear, currentMonth, 1),
-          lte: new Date(currentYear, currentMonth, 30)
+        payments: {
+          none: {
+            paymentDate: {
+              gte: firstDayOfMonth,
+              lte: lastDayOfMonth
+            }
+          }
         }
       },
       include: {
-        payments: {
-          orderBy: {
-            paymentDate: 'desc'
-          },
-          take: 1
-        }
+        payments: true
       }
     });
 
-    // Enviar recordatorios por WhatsApp
+    // Procesar cada residente
     for (const resident of residents) {
-      if (resident.phone) {
-        try {
-          await whatsappService.sendPaymentReminder(resident);
-          console.log(`Recordatorio enviado a ${resident.name} ${resident.lastName}`);
-        } catch (error) {
-          console.error(`Error al enviar recordatorio a ${resident.name} ${resident.lastName}:`, error);
-        }
-      }
+      // Aquí podrías implementar otras formas de notificación
+      // como email o notificaciones en la aplicación
+      console.log(`Recordatorio de pago pendiente para: ${resident.name}`);
     }
 
-    return NextResponse.json({
-      message: "Recordatorios enviados",
-      residentsNotified: residents.length
+    return NextResponse.json({ 
+      message: "Recordatorios procesados",
+      count: residents.length
     });
   } catch (error) {
-    console.error('Error al enviar recordatorios:', error);
+    console.error('Error al procesar recordatorios:', error);
     return NextResponse.json(
-      { 
-        error: "Error al enviar recordatorios",
-        details: error instanceof Error ? error.message : "Error desconocido"
-      },
+      { error: "Error al procesar recordatorios" },
       { status: 500 }
     );
   }
