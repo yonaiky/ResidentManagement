@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Building2,
   Eye,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 import { Overview } from "@/components/dashboard/overview";
 import { RecentPayments } from "@/components/dashboard/recent-payments";
@@ -50,7 +51,7 @@ type Activity = {
   paymentDate: string;
 };
 
-export default function Home() {
+export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);

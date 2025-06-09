@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
     // If user is already authenticated and trying to access login/register, redirect to dashboard
     const isAuthenticated = request.cookies.has('auth-token');
     if (isAuthenticated) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
   }
@@ -36,6 +36,11 @@ export function middleware(request: NextRequest) {
     url.pathname = '/login';
     url.searchParams.set('from', request.nextUrl.pathname);
     return NextResponse.redirect(url);
+  }
+  
+  // Redirect root path to dashboard for authenticated users
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   
   return NextResponse.next();
