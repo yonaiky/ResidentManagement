@@ -67,8 +67,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       );
     }
 
-    const { amount } = body;
-    console.log('Amount:', amount);
+    const { amount, month, year } = body;
+    console.log('Payment data:', { amount, month, year });
     
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       console.log('Monto inválido');
@@ -79,9 +79,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const today = new Date();
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
-    console.log('Fecha actual:', { today, currentMonth, currentYear });
+    const paymentMonth = month || (today.getMonth() + 1);
+    const paymentYear = year || today.getFullYear();
+    
+    console.log('Fecha de pago:', { paymentMonth, paymentYear });
 
     // Verificar si el residente existe
     console.log('Buscando residente...');
@@ -98,14 +99,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
     console.log('Residente encontrado:', resident);
 
-    // Verificar si ya existe un pago para este mes
+    // Verificar si ya existe un pago para este mes y año
     console.log('Verificando pagos existentes...');
     const existingPayment = await prisma.payment.findFirst({
       where: {
         AND: [
           { residentId: residentId },
-          { month: currentMonth },
-          { year: currentYear }
+          { month: paymentMonth },
+          { year: paymentYear }
         ]
       }
     });
@@ -113,18 +114,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (existingPayment) {
       console.log('Pago existente encontrado');
       return NextResponse.json(
-        { error: "Ya existe un pago registrado para este mes" },
+        { error: `Ya existe un pago registrado para ${new Date(paymentYear, paymentMonth - 1).toLocaleString('es', { month: 'long' })} ${paymentYear}` },
         { status: 400 }
       );
     }
 
-    // Calcular la fecha de vencimiento (día 30 del mes actual)
-    const dueDate = new Date(currentYear, currentMonth, 30);
+    // Calcular la fecha de vencimiento (día 30 del mes especificado)
+    const dueDate = new Date(paymentYear, paymentMonth - 1, 30);
     console.log('Fecha de vencimiento:', dueDate);
-
-    // Calcular la fecha del próximo pago (día 30 del mes siguiente)
-    const nextPaymentDate = new Date(currentYear, currentMonth + 1, 30);
-    console.log('Fecha del próximo pago:', nextPaymentDate);
 
     // Crear el pago
     console.log('Creando pago...');
@@ -134,24 +131,38 @@ export async function POST(request: Request, { params }: { params: { id: string 
         residentId: residentId,
         paymentDate: today,
         dueDate,
-        month: currentMonth,
-        year: currentYear,
+        month: paymentMonth,
+        year: paymentYear,
         status: 'completed'
       }
     });
     console.log('Pago creado:', payment);
 
-    // Actualizar el estado del residente
-    console.log('Actualizando estado del residente...');
-    await prisma.resident.update({
-      where: { id: residentId },
-      data: {
-        paymentStatus: 'paid',
-        lastPaymentDate: today,
-        nextPaymentDate
+    // Actualizar el estado del residente solo si es el mes actual o futuro
+    const currentMonth = today.getMonth() + 1;
+    const currentYear = today.getFullYear();
+    
+    if (paymentYear > currentYear || (paymentYear === currentYear && paymentMonth >= currentMonth)) {
+      console.log('Actualizando estado del residente...');
+      
+      // Calcular la fecha del próximo pago
+      let nextPaymentDate;
+      if (paymentMonth === 12) {
+        nextPaymentDate = new Date(paymentYear + 1, 0, 30); // Enero del siguiente año
+      } else {
+        nextPaymentDate = new Date(paymentYear, paymentMonth, 30); // Siguiente mes
       }
-    });
-    console.log('Estado del residente actualizado');
+      
+      await prisma.resident.update({
+        where: { id: residentId },
+        data: {
+          paymentStatus: 'paid',
+          lastPaymentDate: today,
+          nextPaymentDate
+        }
+      });
+      console.log('Estado del residente actualizado');
+    }
 
     return NextResponse.json(payment);
   } catch (error) {
@@ -165,4 +176,4 @@ export async function POST(request: Request, { params }: { params: { id: string 
       { status: 500 }
     );
   }
-} 
+}
