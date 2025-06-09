@@ -50,7 +50,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { PaymentForm } from "@/components/payments/PaymentForm";
+import { EnhancedPaymentForm } from "@/components/payments/enhanced-payment-form";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditResidentModal } from "@/components/residents/edit-resident-modal";
@@ -414,10 +414,12 @@ export function ResidentsTable() {
       </Dialog>
 
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
-          <DialogTitle>Registrar Nuevo Pago</DialogTitle>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle>
+            Gestión de Pagos - {selectedResident?.name} {selectedResident?.lastName}
+          </DialogTitle>
           {selectedResident && (
-            <PaymentForm
+            <EnhancedPaymentForm
               resident={selectedResident}
               onSuccess={() => {
                 fetchResidents();
