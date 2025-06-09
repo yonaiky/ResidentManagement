@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { comparePassword } from '@/lib/auth';
+import { comparePassword, generateToken, setAuthCookies } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate JWT token
+    const token = generateToken(user);
+
     // Create response with user data
     const response = NextResponse.json({
       message: 'Login successful',
@@ -51,14 +54,8 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Set simple authentication cookie
-    response.cookies.set('auth-status', 'authenticated', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 días
-    });
+    // Set authentication cookies
+    setAuthCookies(response, token);
 
     return response;
   } catch (error) {

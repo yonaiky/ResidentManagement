@@ -69,7 +69,11 @@ export default function LoginPage() {
         description: `Welcome back, ${result.user.username}!`,
       });
 
-      router.push("/");
+      // Get the redirect URL from the query parameters
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectTo = searchParams.get('from') || '/';
+      
+      router.push(redirectTo);
       router.refresh();
     } catch (error) {
       toast({
