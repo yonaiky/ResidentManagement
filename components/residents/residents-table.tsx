@@ -53,6 +53,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EditResidentModal } from "@/components/residents/edit-resident-modal";
 
 type Resident = {
   id: number;
@@ -79,6 +80,8 @@ export function ResidentsTable() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [residentToEdit, setResidentToEdit] = useState<Resident | null>(null);
 
   useEffect(() => {
     fetchResidents();
@@ -133,6 +136,11 @@ export function ResidentsTable() {
     } finally {
       setResidentToDelete(null);
     }
+  };
+
+  const handleEdit = (resident: Resident) => {
+    setResidentToEdit(resident);
+    setShowEditModal(true);
   };
 
   const handleSendAlert = async (resident: Resident) => {
@@ -352,11 +360,9 @@ export function ResidentsTable() {
                               Registrar Pago
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                              <Link href={`/residents/${resident.id}/edit`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar Información
-                              </Link>
+                            <DropdownMenuItem onClick={() => handleEdit(resident)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar Información
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href={`/residents/${resident.id}/tokens`}>
@@ -388,7 +394,14 @@ export function ResidentsTable() {
         </CardContent>
       </Card>
 
-      {/* Dialogs */}
+      {/* Modals */}
+      <EditResidentModal
+        resident={residentToEdit}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSuccess={fetchResidents}
+      />
+
       <Dialog open={showPayments} onOpenChange={setShowPayments}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogTitle>
