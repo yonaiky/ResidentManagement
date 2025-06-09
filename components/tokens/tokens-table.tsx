@@ -224,7 +224,7 @@ export function TokensTable() {
                       </TableCell>
                       <TableCell>
                         {token.status === "active" ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                          <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                             <CheckCircle className="mr-1 h-3 w-3" />
                             Activo
                           </Badge>
@@ -237,7 +237,7 @@ export function TokensTable() {
                       </TableCell>
                       <TableCell>
                         {token.paymentStatus === "paid" ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                          <Badge variant="outline\" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                             <CheckCircle className="mr-1 h-3 w-3" />
                             Pagado
                           </Badge>
