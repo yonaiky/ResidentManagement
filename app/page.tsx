@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Building2,
   Eye,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 import { Overview } from "@/components/dashboard/overview";
 import { RecentPayments } from "@/components/dashboard/recent-payments";
