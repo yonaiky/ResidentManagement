@@ -125,12 +125,21 @@ export function TokenCard({ token, onTokenDeleted }: TokenCardProps) {
           </Badge>
         </div>
         <div className="mt-4 space-y-2">
-          {token.lastPaymentDate && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Último Pago:</span>
-              <span>{new Date(token.lastPaymentDate).toLocaleDateString()}</span>
-            </div>
-          )}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Estado:</span>
+            <Badge variant="outline" className={
+              token.status === "active" 
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+            }>
+              {token.status === "active" ? (
+                <CheckCircle className="mr-1 h-3 w-3" />
+              ) : (
+                <AlertCircle className="mr-1 h-3 w-3" />
+              )}
+              {token.status === "active" ? "Activo" : "Inactivo"}
+            </Badge>
+          </div>
         </div>
       </CardContent>
     </Card>

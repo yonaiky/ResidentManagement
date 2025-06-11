@@ -79,10 +79,7 @@ export function ResidentTokensTable({ residentId }: ResidentTokensTableProps) {
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Estado de Pago</TableHead>
-            <TableHead>Último Pago</TableHead>
-            <TableHead>Próximo Pago</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
+            <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,47 +98,20 @@ export function ResidentTokensTable({ residentId }: ResidentTokensTableProps) {
           ) : (
             tokens.map((token) => (
               <TableRow key={token.id}>
-                <TableCell className="font-medium">{token.name}</TableCell>
+                <TableCell>{token.name}</TableCell>
                 <TableCell>
-                  {token.status === "active" ? (
-                    <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  <Badge variant="outline" className={
+                    token.status === "active" 
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                  }>
+                    {token.status === "active" ? (
                       <CheckCircle className="mr-1 h-3 w-3" />
-                      Activo
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                    ) : (
                       <AlertCircle className="mr-1 h-3 w-3" />
-                      Inactivo
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {token.paymentStatus === "paid" ? (
-                    <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Pagado
-                    </Badge>
-                  ) : token.paymentStatus === "pending" ? (
-                    <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
-                      <Clock className="mr-1 h-3 w-3" />
-                      Pendiente
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                      <AlertCircle className="mr-1 h-3 w-3" />
-                      Vencido
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {token.lastPaymentDate
-                    ? format(new Date(token.lastPaymentDate), "dd/MM/yyyy")
-                    : "N/A"}
-                </TableCell>
-                <TableCell>
-                  {token.nextPaymentDate
-                    ? format(new Date(token.nextPaymentDate), "dd/MM/yyyy")
-                    : "N/A"}
+                    )}
+                    {token.status === "active" ? "Activo" : "Inactivo"}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
