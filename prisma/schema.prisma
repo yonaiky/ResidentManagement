@@ -76,3 +76,37 @@ model Notification {
   resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
 }
+
+model CompanyInfo {
+  id        Int      @id @default(autoincrement())
+  name      String
+  rnc       String   @unique
+  address   String
+  phone     String
+  email     String
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FiscalConfig {
+  id              Int      @id @default(autoincrement())
+  resolutionNumber String
+  resolutionDate   DateTime
+  validUntil      DateTime
+  ncfSeries       String
+  currentSequence Int
+  maxSequence     Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InvoiceConfig {
+  id                  Int      @id @default(autoincrement())
+  paymentTerms        String
+  latePaymentInterest Float
+  itbisRate          Float
+  footerNotes        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
