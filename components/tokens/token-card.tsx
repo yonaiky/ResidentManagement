@@ -29,9 +29,6 @@ interface TokenCardProps {
     id: number;
     name: string;
     status: string;
-    paymentStatus: string;
-    lastPaymentDate: string | null;
-    nextPaymentDate: string | null;
     residentId: number;
   };
   onTokenDeleted: () => void;
@@ -128,31 +125,10 @@ export function TokenCard({ token, onTokenDeleted }: TokenCardProps) {
           </Badge>
         </div>
         <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Estado de Pago:</span>
-            <Badge variant="outline" className={
-              token.paymentStatus === "paid" 
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300"
-            }>
-              {token.paymentStatus === "paid" ? (
-                <CheckCircle className="mr-1 h-3 w-3" />
-              ) : (
-                <Clock className="mr-1 h-3 w-3" />
-              )}
-              {token.paymentStatus === "paid" ? "Pagado" : "Pendiente"}
-            </Badge>
-          </div>
           {token.lastPaymentDate && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Último Pago:</span>
               <span>{new Date(token.lastPaymentDate).toLocaleDateString()}</span>
-            </div>
-          )}
-          {token.nextPaymentDate && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Próximo Pago:</span>
-              <span>{new Date(token.nextPaymentDate).toLocaleDateString()}</span>
             </div>
           )}
         </div>

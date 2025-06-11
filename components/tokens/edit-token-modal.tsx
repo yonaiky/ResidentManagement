@@ -34,7 +34,6 @@ import { Loader2, Key, Edit } from "lucide-react";
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   status: z.enum(["active", "inactive"]),
-  paymentStatus: z.enum(["paid", "pending", "overdue"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -43,7 +42,6 @@ type Token = {
   id: number;
   name: string;
   status: string;
-  paymentStatus: string;
   resident?: {
     name: string;
     lastName: string;
@@ -66,7 +64,6 @@ export function EditTokenModal({ token, open, onOpenChange, onSuccess }: EditTok
     defaultValues: {
       name: "",
       status: "active",
-      paymentStatus: "pending",
     },
   });
 
@@ -75,7 +72,6 @@ export function EditTokenModal({ token, open, onOpenChange, onSuccess }: EditTok
       form.reset({
         name: token.name,
         status: token.status as "active" | "inactive",
-        paymentStatus: token.paymentStatus as "paid" | "pending" | "overdue",
       });
     }
   }, [token, form]);
@@ -164,29 +160,6 @@ export function EditTokenModal({ token, open, onOpenChange, onSuccess }: EditTok
                     <SelectContent>
                       <SelectItem value="active">Activo</SelectItem>
                       <SelectItem value="inactive">Inactivo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="paymentStatus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado de Pago</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el estado de pago" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="paid">Pagado</SelectItem>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="overdue">Vencido</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

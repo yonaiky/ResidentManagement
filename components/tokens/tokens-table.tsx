@@ -53,9 +53,6 @@ type Token = {
   id: number;
   name: string;
   status: "active" | "inactive";
-  paymentStatus: "paid" | "pending" | "overdue";
-  lastPaymentDate: string | null;
-  nextPaymentDate: string | null;
   resident: {
     id: number;
     name: string;
@@ -184,8 +181,6 @@ export function TokensTable() {
                   <TableHead className="font-semibold">Nombre</TableHead>
                   <TableHead className="font-semibold">Residente</TableHead>
                   <TableHead className="font-semibold">Estado</TableHead>
-                  <TableHead className="font-semibold">Estado de Pago</TableHead>
-                  <TableHead className="font-semibold">Próximo Pago</TableHead>
                   <TableHead className="text-right font-semibold">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,14 +221,6 @@ export function TokensTable() {
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={token.status === "active" ? "active" : "inactive"} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={token.paymentStatus} />
-                      </TableCell>
-                      <TableCell>
-                        {token.nextPaymentDate
-                          ? format(new Date(token.nextPaymentDate), "dd/MM/yyyy")
-                          : "N/A"}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
