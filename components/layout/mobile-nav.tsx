@@ -8,7 +8,8 @@ import {
   Key, 
   CreditCard, 
   UserCog,
-  Settings
+  Settings,
+  MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,6 +64,11 @@ export function MobileNav() {
       href: "/payments",
       label: "Payments",
       icon: CreditCard,
+    },
+    {
+      href: "/whatsapp",
+      label: "WhatsApp",
+      icon: MessageCircle,
     },
   ];
 

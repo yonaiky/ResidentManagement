@@ -34,7 +34,8 @@ import {
   Bell,
   Phone,
   MapPin,
-  User
+  User,
+  MessageCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -54,6 +55,7 @@ import { EnhancedPaymentForm } from "@/components/payments/enhanced-payment-form
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditResidentModal } from "@/components/residents/edit-resident-modal";
+import { SendMessageModal } from "@/components/whatsapp/send-message-modal";
 
 type Resident = {
   id: number;
@@ -82,6 +84,8 @@ export function ResidentsTable() {
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [residentToEdit, setResidentToEdit] = useState<Resident | null>(null);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [residentForWhatsApp, setResidentForWhatsApp] = useState<Resident | null>(null);
 
   useEffect(() => {
     fetchResidents();
@@ -165,6 +169,19 @@ export function ResidentsTable() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSendWhatsApp = (resident: Resident) => {
+    if (!resident.phone) {
+      toast({
+        title: "Error",
+        description: "Este residente no tiene número de teléfono registrado",
+        variant: "destructive",
+      });
+      return;
+    }
+    setResidentForWhatsApp(resident);
+    setShowWhatsAppModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -300,6 +317,17 @@ export function ResidentsTable() {
                           <div className="flex items-center gap-2 text-sm">
                             <Phone className="h-3 w-3 text-muted-foreground" />
                             {resident.phone}
+                            {resident.phone && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                                onClick={() => handleSendWhatsApp(resident)}
+                                title="Enviar WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <MapPin className="h-3 w-3" />
@@ -360,6 +388,12 @@ export function ResidentsTable() {
                               Registrar Pago
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            {resident.phone && (
+                              <DropdownMenuItem onClick={() => handleSendWhatsApp(resident)}>
+                                <MessageCircle className="mr-2 h-4 w-4" />
+                                Enviar WhatsApp
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => handleEdit(resident)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar Información
@@ -400,6 +434,13 @@ export function ResidentsTable() {
         open={showEditModal}
         onOpenChange={setShowEditModal}
         onSuccess={fetchResidents}
+      />
+
+      <SendMessageModal
+        resident={residentForWhatsApp}
+        open={showWhatsAppModal}
+        onOpenChange={setShowWhatsAppModal}
+        onSuccess={() => {}}
       />
 
       <Dialog open={showPayments} onOpenChange={setShowPayments}>
