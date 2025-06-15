@@ -10,12 +10,23 @@ export interface CompanyInfoData {
 }
 
 export interface FiscalConfigData {
+  businessName?: string;
+  ruc?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  logoPath?: string;
   resolutionNumber: string;
   resolutionDate: string;
   validUntil: string;
   ncfSeries: string;
   currentSequence: number;
   maxSequence: number;
+  itbisRate?: number;
+  latePaymentInterest?: number;
+  paymentTerms?: string;
+  footerNotes?: string;
 }
 
 export interface InvoiceConfigData {
@@ -70,23 +81,36 @@ export const settingsService = {
     try {
       const existing = await prisma.fiscalConfig.findFirst();
       
+      // Ensure all required fields are present with default values
+      const fiscalData = {
+        businessName: data.businessName || '',
+        ruc: data.ruc || '',
+        address: data.address || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        website: data.website,
+        logoPath: data.logoPath,
+        resolutionNumber: data.resolutionNumber,
+        resolutionDate: new Date(data.resolutionDate),
+        validUntil: new Date(data.validUntil),
+        ncfSeries: data.ncfSeries,
+        currentSequence: data.currentSequence,
+        maxSequence: data.maxSequence,
+        itbisRate: data.itbisRate || 0,
+        latePaymentInterest: data.latePaymentInterest || 0,
+        paymentTerms: data.paymentTerms || '',
+        footerNotes: data.footerNotes
+      };
+      
       if (existing) {
         return prisma.fiscalConfig.update({
           where: { id: existing.id },
-          data: {
-            ...data,
-            resolutionDate: new Date(data.resolutionDate),
-            validUntil: new Date(data.validUntil)
-          }
+          data: fiscalData
         });
       }
 
       return prisma.fiscalConfig.create({
-        data: {
-          ...data,
-          resolutionDate: new Date(data.resolutionDate),
-          validUntil: new Date(data.validUntil)
-        }
+        data: fiscalData
       });
     } catch (error) {
       console.error('Error updating fiscal config:', error);

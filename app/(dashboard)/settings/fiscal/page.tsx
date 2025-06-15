@@ -1,9 +1,17 @@
 import { Suspense } from "react";
 import { FiscalConfigForm } from "@/components/fiscal/fiscal-config-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { headers } from "next/headers";
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getFiscalConfig() {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/fiscal-config`, {
+  const headersList = headers();
+  const host = headersList.get("host");
+  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+  
+  const response = await fetch(`${protocol}://${host}/api/fiscal-config`, {
     cache: "no-store",
   });
 

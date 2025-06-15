@@ -501,7 +501,7 @@ export default function SettingsPage() {
                                       <InputMask
                                         mask="0-00-00000-0"
                                         unmask={false}
-                                        onAccept={(value) => field.onChange(value)}
+                                        onAccept={(value: string) => field.onChange(value)}
                                         value={field.value}
                                         placeholder="1-31-12345-6"
                                         disabled={!isEditing}

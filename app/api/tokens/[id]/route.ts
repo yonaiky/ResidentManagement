@@ -40,14 +40,13 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { name, status, paymentStatus } = body;
+    const { name, status } = body;
 
     const token = await prisma.token.update({
       where: { id: parseInt(params.id) },
       data: {
         name,
         status,
-        paymentStatus,
       },
     });
 
