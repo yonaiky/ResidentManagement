@@ -21,33 +21,71 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
-model Resident {
+model Client {
   id              Int           @id @default(autoincrement())
   name            String
   lastName        String
   cedula          String        @unique
-  noRegistro      String?       @unique @map("NoRegistro")
   phone           String
   email           String?
   address         String
+  emergencyContact String?
+  emergencyPhone  String?
   paymentStatus   String        @default("pending")
   lastPaymentDate DateTime?
   nextPaymentDate DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  tokens          Token[]
+  plans           Plan[]
   notifications   Notification[]
   payments        Payment[]
+  familyMembers   FamilyMember[]
 }
 
-model Token {
+model FamilyMember {
   id              Int           @id @default(autoincrement())
   name            String
-  status          String        @default("active")
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  lastName        String
+  cedula          String        @unique
+  phone           String?
+  email           String?
+  relationship    String        // padre, madre, hijo, hija, esposo, esposa, etc.
+  dateOfBirth     DateTime?
+  isActive        Boolean       @default(true)
+  clientId        Int
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model Plan {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String?
+  status          String        @default("active")
+  planType        String        @default("funeral") // funeral, cremation, burial, memorial
+  price           Float
+  duration        Int?          // duración en meses
+  clientId        Int
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  casketId        Int?
+  casket          Casket?       @relation(fields: [casketId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Casket {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String?
+  material        String        // madera, metal, etc.
+  size            String?       // tamaño del ataúd
+  price           Float
+  stock           Int           @default(0)
+  status          String        @default("available") // available, reserved, sold
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  plans           Plan[]
 }
 
 model Payment {
@@ -58,8 +96,8 @@ model Payment {
   dueDate         DateTime      // Fecha de vencimiento del mes
   month           Int           @default(1)
   year            Int           @default(2024)
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  clientId        Int
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -69,44 +107,35 @@ model Notification {
   message         String
   type            String        @default("info")
   read            Boolean       @default(false)
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  clientId        Int
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
 }
 
 model CompanyInfo {
   id        Int      @id @default(autoincrement())
   name      String
-  rnc       String   @unique
   address   String
   phone     String
-  email     String
+  email     String?
   website   String?
+  logo      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model FiscalConfig {
-  id                  Int      @id @default(autoincrement())
-  businessName        String
-  ruc                 String   @unique
-  address             String
-  phone               String
-  email               String
-  website             String?
-  logoPath            String?
-  resolutionNumber    String
-  resolutionDate      DateTime
-  validUntil          DateTime
-  ncfSeries           String
-  currentSequence     Int
-  maxSequence         Int
-  itbisRate           Float
-  latePaymentInterest Float
-  paymentTerms        String
-  footerNotes         String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  rnc             String   @unique
+  businessName    String
+  address         String
+  phone           String
+  email           String?
+  logo            String?
+  invoicePrefix   String   @default("FUN")
+  invoiceNumber   Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model InvoiceConfig {

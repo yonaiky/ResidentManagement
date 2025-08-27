@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { 
   Home, 
   Users, 
-  Key, 
+  Heart, 
   CreditCard, 
   UserCog,
   BarChart3,
   Settings,
-  MessageCircle
+  MessageCircle,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,28 +55,34 @@ export default function Sidebar() {
       description: "Overview & Analytics",
     },
     {
-      href: "/residents",
-      label: "Residents",
+      href: "/clients",
+      label: "Clientes",
       icon: Users,
-      description: "Manage residents",
+      description: "Gestión de clientes",
     },
     {
-      href: "/tokens",
-      label: "Tokens",
-      icon: Key,
-      description: "Access tokens",
+      href: "/plans",
+      label: "Planes",
+      icon: Heart,
+      description: "Planes funerarios",
+    },
+    {
+      href: "/caskets",
+      label: "Ataúdes",
+      icon: Package,
+      description: "Inventario de ataúdes",
     },
     {
       href: "/payments",
-      label: "Payments",
+      label: "Pagos",
       icon: CreditCard,
-      description: "Payment records",
+      description: "Registros de pagos",
     },
     {
       href: "/whatsapp",
       label: "WhatsApp",
       icon: MessageCircle,
-      description: "Notifications",
+      description: "Notificaciones",
     },
   ];
 
@@ -83,9 +90,9 @@ export default function Sidebar() {
   if (user && (user.role === 'admin' || user.role === 'manager')) {
     routes.push({
       href: "/users",
-      label: "Users",
+      label: "Usuarios",
       icon: UserCog,
-      description: "User management",
+      description: "Gestión de usuarios",
     });
   }
 
@@ -93,9 +100,9 @@ export default function Sidebar() {
   if (user && user.role === 'admin') {
     routes.push({
       href: "/settings",
-      label: "Settings",
+      label: "Configuración",
       icon: Settings,
-      description: "System configuration",
+      description: "Configuración del sistema",
     });
   }
 

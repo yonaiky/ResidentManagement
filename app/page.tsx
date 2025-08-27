@@ -18,7 +18,9 @@ import {
   Building2,
   Eye,
   Plus,
-  BarChart3
+  BarChart3,
+  Heart,
+  Package
 } from "lucide-react";
 import { Overview } from "@/components/dashboard/overview";
 import { RecentPayments } from "@/components/dashboard/recent-payments";
@@ -33,23 +35,27 @@ import Sidebar from '@/components/layout/sidebar';
 import { Footer } from '@/components/ui/footer';
 
 type DashboardStats = {
-  totalResidents: number;
-  newResidentsThisMonth: number;
-  activeTokens: number;
-  newTokensThisMonth: number;
+  totalClients: number;
+  newClientsThisMonth: number;
+  activePlans: number;
+  newPlansThisMonth: number;
   currentMonthTotal: number;
   percentageChange: number;
   pendingPayments: number;
   pendingPercentageChange: number;
   pendingPaymentsCount: number;
   pendingPaymentsTotal: number;
+  totalCaskets: number;
+  availableCaskets: number;
+  totalFamilyMembers: number;
+  newFamilyMembersThisMonth: number;
 };
 
 type Activity = {
   id: number;
-  residentId: number;
-  residentName: string;
-  noRegistro: string;
+  clientId: number;
+  clientName: string;
+  cedula: string;
   amount: number;
   paymentDate: string;
 };
@@ -104,28 +110,6 @@ export default function Home() {
     );
   }
 
-  if (!stats) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-        <Header />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-            <div className="mx-auto max-w-7xl animate-fade-in">
-              <div className="text-center py-12">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No se pudieron cargar los datos</h3>
-                <p className="text-muted-foreground mb-4">Hubo un problema al cargar la información del dashboard</p>
-                <Button onClick={fetchDashboardData}>Reintentar</Button>
-              </div>
-            </div>
-          </main>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       <Header />
@@ -141,212 +125,155 @@ export default function Home() {
                     Dashboard
                   </h1>
                   <p className="text-lg text-muted-foreground">
-                    Bienvenido al sistema de gestión de residentes
+                    Resumen general de la funeraria
                   </p>
                 </div>
                 <div className="flex gap-3">
                   <Button variant="outline" asChild>
-                    <Link href="/residents">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Ver Residentes
+                    <Link href="/clients/new">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nuevo Cliente
                     </Link>
                   </Button>
                   <Button asChild>
-                    <Link href="/residents/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Nuevo Residente
+                    <Link href="/plans/new">
+                      <Heart className="mr-2 h-4 w-4" />
+                      Nuevo Plan
                     </Link>
                   </Button>
                 </div>
               </div>
-              
+
               {/* Stats Cards */}
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="card-hover bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 dark:from-blue-950/50 dark:via-blue-900/30 dark:to-blue-800/50 border-blue-200/50 dark:border-blue-800/50">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                      Total Residentes
-                    </CardTitle>
-                    <div className="rounded-full bg-blue-500/10 p-2">
-                      <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="card-hover">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
-                      {stats.totalResidents}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                        <TrendingUp className="h-3 w-3" />
-                        <span className="font-medium">+{stats.newResidentsThisMonth}</span>
-                      </div>
-                      <span className="text-muted-foreground">este mes</span>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="card-hover bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100 dark:from-purple-950/50 dark:via-purple-900/30 dark:to-purple-800/50 border-purple-200/50 dark:border-purple-800/50">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                      Tokens Activos
-                    </CardTitle>
-                    <div className="rounded-full bg-purple-500/10 p-2">
-                      <CreditCard className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-purple-900 dark:text-purple-100 mb-2">
-                      {stats.activeTokens}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                        <Activity className="h-3 w-3" />
-                        <span className="font-medium">+{stats.newTokensThisMonth}</span>
-                      </div>
-                      <span className="text-muted-foreground">este mes</span>
-                    </div>
+                    <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +{stats?.newClientsThisMonth || 0} este mes
+                    </p>
                   </CardContent>
                 </Card>
 
-                <Card className="card-hover bg-gradient-to-br from-emerald-50 via-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:via-emerald-900/30 dark:to-emerald-800/50 border-emerald-200/50 dark:border-emerald-800/50">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                      Ingresos del Mes
-                    </CardTitle>
-                    <div className="rounded-full bg-emerald-500/10 p-2">
-                      <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
+                <Card className="card-hover">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Planes Activos</CardTitle>
+                    <Heart className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mb-2">
-                      ${stats.currentMonthTotal.toFixed(2)}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className={`flex items-center gap-1 ${stats.percentageChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {stats.percentageChange >= 0 ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )}
-                        <span className="font-medium">{Math.abs(stats.percentageChange).toFixed(1)}%</span>
-                      </div>
-                      <span className="text-muted-foreground">vs mes anterior</span>
-                    </div>
+                    <div className="text-2xl font-bold">{stats?.activePlans || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +{stats?.newPlansThisMonth || 0} este mes
+                    </p>
                   </CardContent>
                 </Card>
 
-                <Card className="card-hover bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100 dark:from-amber-950/50 dark:via-amber-900/30 dark:to-amber-800/50 border-amber-200/50 dark:border-amber-800/50">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                      Pagos Pendientes
-                    </CardTitle>
-                    <div className="rounded-full bg-amber-500/10 p-2">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    </div>
+                <Card className="card-hover">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-2">
-                      {stats.pendingPaymentsCount}
+                    <div className="text-2xl font-bold">
+                      ${stats?.currentMonthTotal?.toLocaleString() || 0}
                     </div>
-                    <div className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                      Total: ${stats.pendingPaymentsTotal.toFixed(2)}
-                    </div>
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      {stats?.percentageChange && stats.percentageChange > 0 ? (
+                        <ArrowUp className="mr-1 h-3 w-3 text-green-600" />
+                      ) : (
+                        <ArrowDown className="mr-1 h-3 w-3 text-red-600" />
+                      )}
+                      {Math.abs(stats?.percentageChange || 0)}% vs mes anterior
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="card-hover">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Ataúdes Disponibles</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats?.availableCaskets || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      de {stats?.totalCaskets || 0} en inventario
+                    </p>
                   </CardContent>
                 </Card>
               </div>
-              
-              {/* Main Content Tabs */}
-              <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
-                    <Activity className="h-4 w-4" />
-                    Vista General
-                  </TabsTrigger>
-                  <TabsTrigger value="recent" className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Pagos Recientes
-                  </TabsTrigger>
-                  <TabsTrigger value="pending" className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Pendientes
-                  </TabsTrigger>
+
+              {/* Main Content */}
+              <Tabs defaultValue="overview" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="overview">Resumen</TabsTrigger>
+                  <TabsTrigger value="payments">Pagos Recientes</TabsTrigger>
+                  <TabsTrigger value="pending">Pagos Pendientes</TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="overview" className="space-y-6">
-                  <div className="grid gap-6 lg:grid-cols-7">
-                    <Card className="lg:col-span-4 card-hover">
+
+                <TabsContent value="overview" className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                    <Card className="col-span-4">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <div className="rounded-lg bg-primary/10 p-2">
-                            <BarChart3 className="h-5 w-5 text-primary" />
-                          </div>
-                          Resumen de Pagos
-                        </CardTitle>
+                        <CardTitle>Ingresos Mensuales</CardTitle>
                         <CardDescription>
-                          Distribución mensual de pagos del año actual
+                          Resumen de ingresos y pagos pendientes por mes
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pl-2">
                         <Overview />
                       </CardContent>
                     </Card>
-                    
-                    <Card className="lg:col-span-3 card-hover">
+
+                    <Card className="col-span-3">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <div className="rounded-lg bg-emerald-500/10 p-2">
-                            <Calendar className="h-5 w-5 text-emerald-600" />
-                          </div>
-                          Actividades Recientes
-                        </CardTitle>
+                        <CardTitle>Actividad Reciente</CardTitle>
                         <CardDescription>
-                          Últimas actualizaciones del sistema
+                          Últimos pagos registrados
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {activities.length > 0 ? activities.map((activity) => (
-                            <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                              <div className="rounded-full bg-emerald-100 p-2 dark:bg-emerald-900/30">
-                                <DollarSign className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                          {activities.slice(0, 5).map((activity) => (
+                            <div key={activity.id} className="flex items-center space-x-4">
+                              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                               </div>
                               <div className="flex-1 space-y-1">
                                 <p className="text-sm font-medium leading-none">
-                                  Pago recibido de {activity.residentName}
+                                  {activity.clientName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {activity.cedula}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium">
+                                  ${activity.amount.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {formatDistanceToNow(new Date(activity.paymentDate), { 
-                                    addSuffix: true,
+                                    addSuffix: true, 
                                     locale: es 
                                   })}
                                 </p>
                               </div>
-                              <div className="text-right">
-                                <div className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                  ${activity.amount.toFixed(2)}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  #{activity.noRegistro}
-                                </div>
-                              </div>
                             </div>
-                          )) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>No hay actividades recientes</p>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </CardContent>
                     </Card>
                   </div>
                 </TabsContent>
-                
-                <TabsContent value="recent" className="space-y-6">
+
+                <TabsContent value="payments" className="space-y-4">
                   <RecentPayments />
                 </TabsContent>
-                
-                <TabsContent value="pending" className="space-y-6">
+
+                <TabsContent value="pending" className="space-y-4">
                   <PendingPayments />
                 </TabsContent>
               </Tabs>

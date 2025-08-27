@@ -93,28 +93,20 @@ export function Overview() {
           tickFormatter={(value) => `$${value}`}
         />
         <Tooltip 
-          formatter={(value, name) => [`$${value}`, name === 'total' ? 'Pagos Totales' : 'Pagos Pendientes']}
+          formatter={(value, name) => [`$${value}`, name === 'total' ? 'Ingresos Totales' : 'Pagos Pendientes']}
           cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
           contentStyle={{
             backgroundColor: 'hsl(var(--background))',
             border: '1px solid hsl(var(--border))',
             borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           }}
         />
-        <Legend />
-        <Bar
-          dataKey="total"
-          name="Pagos Totales"
-          fill={COLORS.total}
-          radius={[4, 4, 0, 0]}
+        <Legend 
+          formatter={(value) => value === 'total' ? 'Ingresos Totales' : 'Pagos Pendientes'}
         />
-        <Bar
-          dataKey="pending"
-          name="Pagos Pendientes"
-          fill={COLORS.pending}
-          radius={[4, 4, 0, 0]}
-        />
+        <Bar dataKey="total" fill={COLORS.total} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="pending" fill={COLORS.pending} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
