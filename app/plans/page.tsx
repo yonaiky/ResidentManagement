@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PlansTable } from "@/components/plans/plans-table";
-import { Plus, Heart, HeartPlus } from "lucide-react";
+import { Heart, Plus } from "lucide-react";
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import { Footer } from '@/components/ui/footer';
@@ -43,7 +43,7 @@ export default function PlansPage() {
                   </Button>
                   <Button asChild>
                     <Link href="/plans/new">
-                      <HeartPlus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 h-4 w-4" />
                       Nuevo Plan
                     </Link>
                   </Button>

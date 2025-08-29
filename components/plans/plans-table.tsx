@@ -26,7 +26,6 @@ import {
   MoreHorizontal,
   Search,
   Trash2,
-  User,
   Package,
   DollarSign
 } from "lucide-react";
