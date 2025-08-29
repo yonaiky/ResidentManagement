@@ -334,7 +334,7 @@ export default function ClientDetailsPage({ params }: { params: { id: string } }
                           <Button asChild>
                             <Link href={`/clients/${clientId}/plans`}>
                               <Heart className="mr-2 h-4 w-4" />
-                              Gestionar Planes
+                              Ver Planes
                             </Link>
                           </Button>
                         </div>
@@ -374,7 +374,7 @@ export default function ClientDetailsPage({ params }: { params: { id: string } }
                           <Button asChild>
                             <Link href={`/clients/${clientId}/payments`}>
                               <CreditCard className="mr-2 h-4 w-4" />
-                              Registrar Pago
+                              Ver Pagos
                             </Link>
                           </Button>
                         </div>

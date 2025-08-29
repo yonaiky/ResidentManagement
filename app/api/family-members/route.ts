@@ -3,9 +3,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
+    const where = clientId ? { clientId: parseInt(clientId) } : {};
+
     const familyMembers = await prisma.familyMember.findMany({
+      where,
       include: {
         client: true,
       },

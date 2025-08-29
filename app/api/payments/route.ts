@@ -2,16 +2,27 @@ import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
 
 // GET all payments
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
+    const where = clientId ? { clientId: parseInt(clientId) } : {};
+
     const payments = await prisma.payment.findMany({
+      where,
       include: {
-        resident: {
+        client: {
           select: {
             name: true,
             lastName: true,
-            cedula: true,
-            noRegistro: true
+            cedula: true
+          }
+        },
+        plan: {
+          select: {
+            id: true,
+            name: true
           }
         }
       },
@@ -23,11 +34,8 @@ export async function GET() {
     // Transformar los datos para incluir información adicional
     const formattedPayments = payments.map(payment => ({
       ...payment,
-      residentName: `${payment.resident.name} ${payment.resident.lastName}`,
-      cedula: payment.resident.cedula,
-      noRegistro: payment.resident.noRegistro,
-      monthName: new Date(payment.year, payment.month - 1).toLocaleString('es', { month: 'long' }),
-      year: payment.year
+      clientName: payment.client ? `${payment.client.name} ${payment.client.lastName}` : 'Cliente no encontrado',
+      cedula: payment.client?.cedula || 'N/A',
     }));
 
     return NextResponse.json(formattedPayments);

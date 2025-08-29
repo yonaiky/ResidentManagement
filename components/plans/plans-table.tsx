@@ -82,12 +82,15 @@ export function PlansTable() {
 
   async function fetchPlans() {
     try {
-      const response = await fetch('/api/plans');
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      
+      const response = await fetch(`/api/plans?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Error fetching plans');
       }
       const data = await response.json();
-      setPlans(data);
+      setPlans(data.plans || data); // Compatibilidad con respuesta anterior
     } catch (error) {
       toast({
         title: "Error",
@@ -113,7 +116,8 @@ export function PlansTable() {
       });
 
       if (!response.ok) {
-        throw new Error('Error deleting plan');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error deleting plan');
       }
 
       toast({
@@ -123,9 +127,10 @@ export function PlansTable() {
 
       fetchPlans();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error al eliminar el plan";
       toast({
         title: "Error",
-        description: "Error al eliminar el plan",
+        description: errorMessage,
         variant: "destructive",
       });
     }
