@@ -110,32 +110,32 @@ export default function Home() {
     );
   }
 
-  return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-          <div className="mx-auto max-w-7xl animate-fade-in">
-            <div className="flex flex-col gap-8">
-              {/* Header Section */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-2">
-                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-                    Dashboard
-                  </h1>
-                  <p className="text-lg text-muted-foreground">
-                    Resumen general de la funeraria
-                  </p>
-                </div>
+     return (
+     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+       <Header />
+       <div className="flex flex-1">
+         <Sidebar />
+         <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
+           <div className="mx-auto max-w-7xl animate-fade-in">
+             <div className="flex flex-col gap-6">
+               {/* Header Section */}
+               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                 <div className="space-y-2">
+                   <h1 className="text-4xl font-semibold tracking-tight text-gray-900 dark:text-gradient">
+                     Dashboard
+                   </h1>
+                   <p className="text-lg text-gray-600 dark:text-slate-400">
+                     Resumen general de la funeraria
+                   </p>
+                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" asChild>
+                  <Button variant="outline" className="btn-modern" asChild>
                     <Link href="/clients/new">
                       <Plus className="mr-2 h-4 w-4" />
                       Nuevo Cliente
                     </Link>
                   </Button>
-                  <Button asChild>
+                  <Button className="btn-modern" asChild>
                     <Link href="/plans/new">
                       <Heart className="mr-2 h-4 w-4" />
                       Nuevo Plan
@@ -145,65 +145,73 @@ export default function Home() {
               </div>
 
               {/* Stats Cards */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="card-hover">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      +{stats?.newClientsThisMonth || 0} este mes
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid-responsive-3">
+                                 <Card className="card-hover">
+                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gradient">Total Clientes</CardTitle>
+                     <div className="p-2 rounded-lg bg-blue-100 dark:bg-gradient-to-r dark:from-blue-500/10 dark:to-purple-500/10">
+                       <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                     </div>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="text-3xl font-bold text-gray-900 dark:text-gradient">{stats?.totalClients || 0}</div>
+                     <p className="text-sm text-gray-600 dark:text-slate-400">
+                       +{stats?.newClientsThisMonth || 0} este mes
+                     </p>
+                   </CardContent>
+                 </Card>
 
-                <Card className="card-hover">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Planes Activos</CardTitle>
-                    <Heart className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.activePlans || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      +{stats?.newPlansThisMonth || 0} este mes
-                    </p>
-                  </CardContent>
-                </Card>
+                                 <Card className="card-hover">
+                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gradient">Planes Activos</CardTitle>
+                     <div className="p-2 rounded-lg bg-pink-100 dark:bg-gradient-to-r dark:from-pink-500/10 dark:to-rose-500/10">
+                       <Heart className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                     </div>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="text-3xl font-bold text-gray-900 dark:text-gradient">{stats?.activePlans || 0}</div>
+                     <p className="text-sm text-gray-600 dark:text-slate-400">
+                       +{stats?.newPlansThisMonth || 0} este mes
+                     </p>
+                   </CardContent>
+                 </Card>
 
-                <Card className="card-hover">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      ${stats?.currentMonthTotal?.toLocaleString() || 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground flex items-center">
-                      {stats?.percentageChange && stats.percentageChange > 0 ? (
-                        <ArrowUp className="mr-1 h-3 w-3 text-green-600" />
-                      ) : (
-                        <ArrowDown className="mr-1 h-3 w-3 text-red-600" />
-                      )}
-                      {Math.abs(stats?.percentageChange || 0)}% vs mes anterior
-                    </p>
-                  </CardContent>
-                </Card>
+                                 <Card className="card-hover">
+                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gradient">Ingresos del Mes</CardTitle>
+                     <div className="p-2 rounded-lg bg-green-100 dark:bg-gradient-to-r dark:from-emerald-500/10 dark:to-teal-500/10">
+                       <DollarSign className="h-5 w-5 text-green-600 dark:text-emerald-400" />
+                     </div>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="text-3xl font-bold text-green-700 dark:text-gradient-success">
+                       ${stats?.currentMonthTotal?.toLocaleString() || 0}
+                     </div>
+                     <p className="text-sm text-gray-600 dark:text-slate-400 flex items-center">
+                       {stats?.percentageChange && stats.percentageChange > 0 ? (
+                         <ArrowUp className="mr-1 h-4 w-4 text-green-600" />
+                       ) : (
+                         <ArrowDown className="mr-1 h-4 w-4 text-red-600" />
+                       )}
+                       {Math.abs(stats?.percentageChange || 0)}% vs mes anterior
+                     </p>
+                   </CardContent>
+                 </Card>
 
-                <Card className="card-hover">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ataúdes Disponibles</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats?.availableCaskets || 0}</div>
-                    <p className="text-xs text-muted-foreground">
-                      de {stats?.totalCaskets || 0} en inventario
-                    </p>
-                  </CardContent>
-                </Card>
+                                 <Card className="card-hover">
+                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gradient">Ataúdes Disponibles</CardTitle>
+                     <div className="p-2 rounded-lg bg-amber-100 dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-orange-500/10">
+                       <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                     </div>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="text-3xl font-bold text-amber-700 dark:text-gradient-warning">{stats?.availableCaskets || 0}</div>
+                     <p className="text-sm text-gray-600 dark:text-slate-400">
+                       de {stats?.totalCaskets || 0} en inventario
+                     </p>
+                   </CardContent>
+                 </Card>
               </div>
 
               {/* Main Content */}

@@ -15,8 +15,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Resident Management System',
-  description: 'Manage residents, tokens, and payments efficiently',
+  title: 'Funeraria San Jose',
+  description: 'Funeraria San Jose',
 };
 
 export default function RootLayout({

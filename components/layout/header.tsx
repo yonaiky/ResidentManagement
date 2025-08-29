@@ -125,80 +125,80 @@ export default function Header() {
   };
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-8">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="pr-0">
-              <MobileNav />
-            </SheetContent>
-          </Sheet>
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div className="hidden flex-col md:flex">
-              <span className="text-sm font-bold leading-tight">Resident</span>
-              <span className="text-xs text-muted-foreground leading-tight">Management</span>
-            </div>
-          </Link>
-        </div>
+         <header className="nav-modern fixed top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/80 dark:backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+       <div className="container flex h-16 items-center justify-between px-4 md:px-8">
+         <div className="flex items-center gap-2 md:gap-4">
+           <Sheet>
+             <SheetTrigger asChild>
+               <Button variant="ghost" size="icon" className="md:hidden hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                 <Menu className="h-5 w-5" />
+                 <span className="sr-only">Toggle menu</span>
+               </Button>
+             </SheetTrigger>
+             <SheetContent side="left" className="pr-0 bg-white border-r border-gray-200 dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:border-slate-700/50">
+               <MobileNav />
+             </SheetContent>
+           </Sheet>
+           <Link href="/" className="flex items-center gap-3 transition-all duration-200 hover:scale-[1.02] group">
+             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm group-hover:shadow-md transition-all duration-200 dark:rounded-xl dark:bg-gradient-to-br dark:from-blue-600 dark:via-purple-600 dark:to-pink-600 dark:shadow-lg dark:group-hover:shadow-xl">
+               <Building2 className="h-6 w-6" />
+             </div>
+             <div className="hidden flex-col md:flex">
+               <span className="text-lg font-semibold leading-tight text-gray-900 dark:text-gradient">Funeraria San Jose</span>
+               <span className="text-xs text-gray-600 dark:text-muted-foreground leading-tight">Management System</span>
+             </div>
+           </Link>
+         </div>
         
-        <div className="flex-1 px-2 md:px-12">
-          <form className="hidden md:block">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search residents, tokens, payments..."
-                className="w-full bg-muted/50 pl-10 focus:bg-background"
-              />
-            </div>
-          </form>
-        </div>
+                 <div className="flex-1 px-2 md:px-12">
+           <form className="hidden md:block">
+             <div className="relative max-w-md">
+               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-muted-foreground" />
+               <Input
+                 type="search"
+                 placeholder="Buscar residentes, tokens, pagos..."
+                 className="input-modern w-full bg-gray-50 pl-10 focus:bg-white dark:bg-slate-800 dark:focus:bg-slate-900"
+               />
+             </div>
+           </form>
+         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
+                 <div className="flex items-center gap-2">
+           <Button
+             variant="ghost"
+             size="icon"
+             className="btn-modern text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-slate-800"
+             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+           >
+             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+             <span className="sr-only">Toggle theme</span>
+           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-                <span className="sr-only">Notifications</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <div className="flex items-center justify-between p-2">
-                <h4 className="font-medium">Actividades Recientes</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
-                  onClick={() => setUnreadCount(0)}
-                >
-                  Marcar todo como leído
-                </Button>
-              </div>
+                     <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+               <Button variant="ghost" size="icon" className="btn-modern text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-slate-800 relative">
+                 <Bell className="h-5 w-5" />
+                 {unreadCount > 0 && (
+                   <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center shadow-sm animate-pulse dark:bg-gradient-to-r dark:from-red-400 dark:to-red-500 dark:shadow-lg">
+                     {unreadCount}
+                   </span>
+                 )}
+                 <span className="sr-only">Notifications</span>
+               </Button>
+             </DropdownMenuTrigger>
+                         <DropdownMenuContent align="end" className="w-80 bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg dark:bg-slate-900/95 dark:backdrop-blur-md dark:border-slate-700/50 dark:shadow-xl">
+               <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-slate-700">
+                 <h4 className="font-semibold text-gray-900 dark:text-gradient">Actividades Recientes</h4>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   className="h-8 text-xs hover:bg-gray-100 dark:hover:bg-slate-800"
+                   onClick={() => setUnreadCount(0)}
+                 >
+                   Marcar todo como leído
+                 </Button>
+               </div>
               <DropdownMenuSeparator />
               <div className="max-h-[300px] overflow-y-auto">
                 {activities.length > 0 ? (
@@ -238,24 +238,24 @@ export default function Header() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="end" forceMount>
-                <div className="flex items-center justify-start gap-3 p-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                      {getUserInitials(user.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.username}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {user.email}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
-                    </div>
-                  </div>
-                </div>
+                             <DropdownMenuContent className="w-64 bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg dark:bg-slate-900/95 dark:backdrop-blur-md dark:border-slate-700/50 dark:shadow-xl" align="end" forceMount>
+                 <div className="flex items-center justify-start gap-3 p-4 border-b border-gray-200 dark:border-slate-700">
+                   <Avatar className="h-12 w-12 ring-2 ring-blue-500/20">
+                     <AvatarFallback className="bg-blue-600 text-white font-semibold dark:bg-gradient-to-br dark:from-blue-500 dark:via-purple-600 dark:to-pink-600">
+                       {getUserInitials(user.username)}
+                     </AvatarFallback>
+                   </Avatar>
+                   <div className="flex flex-col space-y-1 leading-none">
+                     <p className="font-semibold text-gray-900 dark:text-gradient">{user.username}</p>
+                     <p className="text-sm text-gray-600 dark:text-muted-foreground truncate">
+                       {user.email}
+                     </p>
+                     <div className="flex items-center gap-2">
+                       <div className="h-2 w-2 rounded-full bg-green-500 shadow-sm dark:bg-gradient-to-r dark:from-emerald-400 dark:to-emerald-500"></div>
+                       <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground capitalize">{user.role}</span>
+                     </div>
+                   </div>
+                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="cursor-pointer">
