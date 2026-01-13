@@ -20,17 +20,17 @@ import {
   Plus,
   BarChart3
 } from "lucide-react";
-import { Overview } from "@/components/dashboard/overview";
-import { RecentPayments } from "@/components/dashboard/recent-payments";
-import { PendingPayments } from "@/components/dashboard/pending-payments";
 import { useToast } from "@/components/ui/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Header from '@/components/layout/header';
-import Sidebar from '@/components/layout/sidebar';
-import { Footer } from '@/components/ui/footer';
+import Header from "@/components/layout/header";
+import Sidebar from "@/components/layout/sidebar";
+import { Footer } from "@/components/ui/footer";
+import { Overview } from "@/components/dashboard/overview";
+import { RecentPayments } from "@/components/dashboard/recent-payments";
+import { PendingPayments } from "@/components/dashboard/pending-payments";
 
 type DashboardStats = {
   totalResidents: number;
