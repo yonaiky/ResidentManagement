@@ -55,6 +55,7 @@ import { EnhancedPaymentForm } from "@/components/payments/enhanced-payment-form
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditResidentModal } from "@/components/residents/edit-resident-modal";
+import { AddResidentModal } from "@/components/residents/add-resident-modal";
 import { SendMessageModal } from "@/components/whatsapp/send-message-modal";
 
 type Resident = {
@@ -87,6 +88,7 @@ export function ResidentsTable() {
   const [residentToEdit, setResidentToEdit] = useState<Resident | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [residentForWhatsApp, setResidentForWhatsApp] = useState<Resident | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchResidents();
@@ -269,8 +271,8 @@ export function ResidentsTable() {
                           </p>
                         </div>
                         {!searchQuery && (
-                          <Button asChild>
-                            <Link href="/residents/new">Agregar Residente</Link>
+                          <Button onClick={() => setShowAddModal(true)}>
+                            Agregar Residente
                           </Button>
                         )}
                       </div>
@@ -402,6 +404,12 @@ export function ResidentsTable() {
       </Card>
 
       {/* Modals */}
+      <AddResidentModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onSuccess={fetchResidents}
+      />
+
       <EditResidentModal
         resident={residentToEdit}
         open={showEditModal}

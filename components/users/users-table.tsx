@@ -42,6 +42,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AddUserModal } from "@/components/users/add-user-modal";
+import { EditUserModal } from "@/components/users/edit-user-modal";
 
 type User = {
   id: number;
@@ -54,14 +56,18 @@ type User = {
 
 interface UsersTableProps {
   currentUser: User | null;
+  onAddClick?: () => void;
 }
 
-export function UsersTable({ currentUser }: UsersTableProps) {
+export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -125,6 +131,11 @@ export function UsersTable({ currentUser }: UsersTableProps) {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = (user: User) => {
+    setUserToEdit(user);
+    setShowEditModal(true);
   };
 
   const handleDelete = async (user: User) => {
@@ -256,6 +267,11 @@ export function UsersTable({ currentUser }: UsersTableProps) {
                         {currentUser?.role === 'admin' && (
                           <>
                             <DropdownMenuItem
+                              onClick={() => handleEdit(user)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleToggleStatus(user)}
                               disabled={currentUser.id === user.id}
                             >
@@ -309,6 +325,20 @@ export function UsersTable({ currentUser }: UsersTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddUserModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onSuccess={fetchUsers}
+      />
+
+      <EditUserModal
+        user={userToEdit}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSuccess={fetchUsers}
+        currentUserId={currentUser?.id}
+      />
     </div>
   );
 }

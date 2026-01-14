@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import { Footer } from '@/components/ui/footer';
+import { AddUserModal } from "@/components/users/add-user-modal";
 
 type User = {
   id: number;
@@ -28,6 +29,7 @@ type User = {
 
 export default function UsersPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,11 +103,9 @@ export default function UsersPage() {
                     </Link>
                   </Button>
                   {currentUser?.role === 'admin' && (
-                    <Button asChild>
-                      <Link href="/users/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Agregar Usuario
-                      </Link>
+                    <Button onClick={() => setShowAddModal(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Agregar Usuario
                     </Button>
                   )}
                 </div>
@@ -130,6 +130,12 @@ export default function UsersPage() {
               </Card>
             </div>
           </div>
+
+          <AddUserModal
+            open={showAddModal}
+            onOpenChange={setShowAddModal}
+            onSuccess={() => window.location.reload()}
+          />
         </main>
       </div>
       <Footer />

@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditTokenModal } from "@/components/tokens/edit-token-modal";
+import { AddTokenModal } from "@/components/tokens/add-token-modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 type Token = {
@@ -68,6 +69,7 @@ export function TokensTable() {
   const [tokenToDelete, setTokenToDelete] = useState<Token | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [tokenToEdit, setTokenToEdit] = useState<Token | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchTokens();
@@ -197,8 +199,8 @@ export function TokensTable() {
                           </p>
                         </div>
                         {!searchQuery && (
-                          <Button asChild>
-                            <Link href="/tokens/new">Agregar Token</Link>
+                          <Button onClick={() => setShowAddModal(true)}>
+                            Agregar Token
                           </Button>
                         )}
                       </div>
@@ -259,6 +261,12 @@ export function TokensTable() {
       </Card>
 
       {/* Modals */}
+      <AddTokenModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onSuccess={fetchTokens}
+      />
+
       <EditTokenModal
         token={tokenToEdit}
         open={showEditModal}

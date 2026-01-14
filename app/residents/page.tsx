@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +15,11 @@ import { Plus, Users, UserPlus } from "lucide-react";
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import { Footer } from '@/components/ui/footer';
+import { AddResidentModal } from "@/components/residents/add-resident-modal";
 
 export default function ResidentsPage() {
+  const [showAddModal, setShowAddModal] = useState(false);
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       <Header />
@@ -41,11 +45,9 @@ export default function ResidentsPage() {
                       Ver Dashboard
                     </Link>
                   </Button>
-                  <Button asChild>
-                    <Link href="/residents/new">
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Nuevo Residente
-                    </Link>
+                  <Button onClick={() => setShowAddModal(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Nuevo Residente
                   </Button>
                 </div>
               </div>
@@ -69,6 +71,12 @@ export default function ResidentsPage() {
               </Card>
             </div>
           </div>
+
+          <AddResidentModal
+            open={showAddModal}
+            onOpenChange={setShowAddModal}
+            onSuccess={() => window.location.reload()}
+          />
         </main>
       </div>
       <Footer />

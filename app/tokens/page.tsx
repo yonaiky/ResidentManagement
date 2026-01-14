@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +15,11 @@ import { Plus, Key, CreditCard } from "lucide-react";
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import { Footer } from '@/components/ui/footer';
+import { AddTokenModal } from "@/components/tokens/add-token-modal";
 
 export default function TokensPage() {
+  const [showAddModal, setShowAddModal] = useState(false);
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       <Header />
@@ -41,11 +45,9 @@ export default function TokensPage() {
                       Ver Dashboard
                     </Link>
                   </Button>
-                  <Button asChild>
-                    <Link href="/tokens/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Agregar Token
-                    </Link>
+                  <Button onClick={() => setShowAddModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agregar Token
                   </Button>
                 </div>
               </div>
@@ -69,6 +71,12 @@ export default function TokensPage() {
               </Card>
             </div>
           </div>
+
+          <AddTokenModal
+            open={showAddModal}
+            onOpenChange={setShowAddModal}
+            onSuccess={() => window.location.reload()}
+          />
         </main>
       </div>
       <Footer />
