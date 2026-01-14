@@ -2,15 +2,16 @@ import * as React from "react";
 import { IMaskInput } from "react-imask";
 import { cn } from "@/lib/utils";
 
-export interface InputMaskProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputMaskProps {
   mask: string;
   unmask?: boolean;
   onAccept?: (value: string) => void;
+  className?: string;
+  [key: string]: any;
 }
 
 const InputMask = React.forwardRef<HTMLInputElement, InputMaskProps>(
-  ({ className, type, mask, unmask = true, onAccept, ...props }, ref) => {
+  ({ className, mask, unmask = true, onAccept, ...props }, ref) => {
     return (
       <IMaskInput
         mask={mask}

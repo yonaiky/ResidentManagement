@@ -71,6 +71,7 @@ type Resident = {
   tokens: any[];
   payments: any[];
   notifications: any[];
+  createdAt: string;
 };
 
 export function ResidentsTable() {
@@ -145,30 +146,6 @@ export function ResidentsTable() {
   const handleEdit = (resident: Resident) => {
     setResidentToEdit(resident);
     setShowEditModal(true);
-  };
-
-  const handleSendAlert = async (resident: Resident) => {
-    try {
-      const response = await fetch(`/api/residents/${resident.id}/send-alert`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al enviar la alerta');
-      }
-
-      toast({
-        title: "Alerta enviada",
-        description: "La alerta de pago ha sido enviada correctamente",
-      });
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar la alerta",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleSendWhatsApp = (resident: Resident) => {
@@ -398,15 +375,11 @@ export function ResidentsTable() {
                               <Edit className="mr-2 h-4 w-4" />
                               Editar Información
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem>
                               <Link href={`/residents/${resident.id}/tokens`}>
                                 <Key className="mr-2 h-4 w-4" />
                                 Gestionar Tokens
                               </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSendAlert(resident)}>
-                              <Bell className="mr-2 h-4 w-4" />
-                              Enviar Recordatorio
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem

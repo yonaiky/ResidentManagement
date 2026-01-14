@@ -26,8 +26,9 @@ export async function POST(request: NextRequest) {
     // Construir filtros para obtener residentes
     let whereClause: any = {
       phone: {
-        not: null,
-        not: ''
+        not: {
+          in: [null, '']
+        }
       }
     };
 

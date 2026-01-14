@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, status, paymentStatus } = body;
+    const { id, name, status } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -76,7 +76,6 @@ export async function PUT(request: Request) {
       data: {
         name,
         status,
-        paymentStatus,
       },
       include: {
         resident: true,

@@ -87,15 +87,26 @@ model CompanyInfo {
 }
 
 model FiscalConfig {
-  id              Int      @id @default(autoincrement())
-  resolutionNumber String
-  resolutionDate   DateTime
-  validUntil      DateTime
-  ncfSeries       String
-  currentSequence Int
-  maxSequence     Int
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  businessName        String
+  ruc                 String   @unique
+  address             String
+  phone               String
+  email               String
+  website             String?
+  logoPath            String?
+  resolutionNumber    String
+  resolutionDate      DateTime
+  validUntil          DateTime
+  ncfSeries           String
+  currentSequence     Int
+  maxSequence         Int
+  itbisRate           Float
+  latePaymentInterest Float
+  paymentTerms        String
+  footerNotes         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model InvoiceConfig {

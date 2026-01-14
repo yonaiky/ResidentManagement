@@ -105,7 +105,7 @@
   }
   
   .status-paid {
-    @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400;
+    @apply bg-emerald-300 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/20;
   }
   
   .status-pending {

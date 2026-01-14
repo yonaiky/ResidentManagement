@@ -35,6 +35,7 @@ type Resident = {
   noRegistro: string;
   phone: string;
   address: string;
+  createdAt: string;
 };
 
 type MonthlyPayment = {
@@ -87,17 +88,24 @@ export function EnhancedPaymentForm({ resident, onSuccess, onClose }: EnhancedPa
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
     
-    // Generar últimos 6 meses y próximos 6 meses
+    // Obtener el mes de registro del residente
+    const registrationDate = new Date(resident.createdAt);
+    const registrationMonth = registrationDate.getMonth();
+    const registrationYear = registrationDate.getFullYear();
+    
+    // Generar meses disponibles para pago
     const months: MonthlyPayment[] = [];
     const history: MonthlyPayment[] = [];
     const available: MonthlyPayment[] = [];
 
-    // Últimos 6 meses
-    for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(currentYear, currentMonth, 1), i);
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-      const dueDate = new Date(year, date.getMonth(), 30);
+    // Generar meses desde el mes de registro hasta el mes actual + 6 meses futuros
+    let currentDate = new Date(registrationYear, registrationMonth, 1);
+    const endDate = new Date(currentYear, currentMonth + 6, 1);
+
+    while (currentDate <= endDate) {
+      const month = currentDate.getMonth() + 1;
+      const year = currentDate.getFullYear();
+      const dueDate = new Date(year, currentDate.getMonth(), 30);
       
       const existingPayment = existingPayments.find(p => p.month === month && p.year === year);
       const status = existingPayment ? 'paid' : (isAfter(today, dueDate) ? 'overdue' : 'pending');
@@ -119,34 +127,13 @@ export function EnhancedPaymentForm({ resident, onSuccess, onClose }: EnhancedPa
       } else {
         available.push(monthData);
       }
-    }
 
-    // Próximos 6 meses
-    for (let i = 1; i <= 6; i++) {
-      const date = addMonths(new Date(currentYear, currentMonth, 1), i);
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
-      const dueDate = new Date(year, date.getMonth(), 30);
-      
-      const monthData: MonthlyPayment = {
-        month,
-        year,
-        amount: MONTHLY_AMOUNT,
-        status: 'pending',
-        dueDate,
-        daysRemaining: Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      };
-
-      months.push(monthData);
-      available.push(monthData);
+      // Avanzar al siguiente mes
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     }
 
     setPaymentHistory(history);
     setAvailableMonths(available);
-    
-    // Auto-seleccionar meses vencidos
-    const overdueMonths = available.filter(m => m.status === 'overdue');
-    setSelectedMonths(overdueMonths);
   };
 
   const toggleMonthSelection = (month: MonthlyPayment) => {
