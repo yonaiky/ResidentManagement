@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { memo, useCallback } from "react";
-import { motion } from "framer-motion";
 import { LogOut, User, ChevronUp, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -62,20 +61,19 @@ function SidebarFooterComponent({
 
   if (isLoading) {
     return (
-      <motion.div
+      <div
         className={cn(
-          "border-t border-sidebar-border p-3",
+          "mt-auto shrink-0 border-t border-sidebar-border p-3",
           collapsed ? "flex justify-center" : ""
         )}
-        layout
       >
-        <motion.div
+        <div
           className={cn(
             "animate-pulse rounded-xl bg-sidebar-accent",
             collapsed ? "h-10 w-10" : "h-14 w-full"
           )}
         />
-      </motion.div>
+      </div>
     );
   }
 
@@ -104,18 +102,14 @@ function SidebarFooterComponent({
 
           {!collapsed && (
             <>
-              <motion.div
-                className="min-w-0 flex-1"
-                initial={false}
-                animate={{ opacity: 1 }}
-              >
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-sidebar-foreground">
                   {user.username}
                 </p>
                 <p className="truncate text-[11px] capitalize text-sidebar-muted">
                   {user.role}
                 </p>
-              </motion.div>
+              </div>
               <ChevronUp className="h-4 w-4 shrink-0 text-sidebar-muted transition-transform group-data-[state=open]:rotate-180" />
             </>
           )}
@@ -159,19 +153,19 @@ function SidebarFooterComponent({
 
   if (collapsed) {
     return (
-      <motion.div className="border-t border-sidebar-border p-3" layout>
+      <div className="mt-auto shrink-0 border-t border-sidebar-border p-3">
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{profileCard}</TooltipTrigger>
           <TooltipContent side="right">{user.username}</TooltipContent>
         </Tooltip>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div className="border-t border-sidebar-border p-3" layout>
+    <div className="mt-auto shrink-0 border-t border-sidebar-border bg-sidebar p-3 shadow-[0_-1px_0_hsl(var(--border))]">
       {profileCard}
-    </motion.div>
+    </div>
   );
 }
 

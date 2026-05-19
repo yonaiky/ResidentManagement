@@ -149,31 +149,39 @@
   }
 
   .card-accent-header {
-    @apply border-b border-border bg-muted/40;
+    @apply border-b border-border;
+    background-color: hsl(var(--muted) / 0.4);
   }
 
   .icon-badge {
-    @apply rounded-lg bg-primary/10 p-2 text-primary;
+    @apply rounded-lg p-2 text-primary;
+    background-color: hsl(var(--primary) / 0.1);
   }
 
   .icon-badge-success {
-    @apply rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400;
+    @apply rounded-lg p-2 text-emerald-600 dark:text-emerald-400;
+    background-color: rgb(16 185 129 / 0.1);
   }
 
   .icon-badge-warning {
-    @apply rounded-lg bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400;
+    @apply rounded-lg p-2 text-amber-600 dark:text-amber-400;
+    background-color: rgb(245 158 11 / 0.1);
   }
 
   .icon-badge-violet {
-    @apply rounded-lg bg-violet-500/10 p-2 text-violet-600 dark:text-violet-400;
+    @apply rounded-lg p-2 text-violet-600 dark:text-violet-400;
+    background-color: rgb(139 92 246 / 0.1);
   }
 
   .icon-badge-indigo {
-    @apply rounded-lg bg-indigo-500/10 p-2 text-indigo-600 dark:text-indigo-400;
+    @apply rounded-lg p-2 text-indigo-600 dark:text-indigo-400;
+    background-color: rgb(99 102 241 / 0.1);
   }
 
   .glass-effect {
-    @apply border border-border/60 bg-card/80 shadow-md backdrop-blur-sm;
+    @apply border shadow-md backdrop-blur-sm;
+    border-color: hsl(var(--border) / 0.6);
+    background-color: hsl(var(--card) / 0.8);
   }
 
   .card-hover {
@@ -185,19 +193,23 @@
   }
 
   .status-paid {
-    @apply bg-emerald-500/15 text-emerald-700 dark:text-emerald-400;
+    @apply text-emerald-700 dark:text-emerald-400;
+    background-color: rgb(16 185 129 / 0.15);
   }
 
   .status-pending {
-    @apply bg-amber-500/15 text-amber-800 dark:text-amber-400;
+    @apply text-amber-800 dark:text-amber-400;
+    background-color: rgb(245 158 11 / 0.15);
   }
 
   .status-overdue {
-    @apply bg-destructive/15 text-destructive dark:text-red-400;
+    @apply text-destructive dark:text-red-400;
+    background-color: hsl(var(--destructive) / 0.15);
   }
 
   .status-active {
-    @apply bg-primary/15 text-primary;
+    @apply text-primary;
+    background-color: hsl(var(--primary) / 0.15);
   }
 
   .status-inactive {
@@ -209,11 +221,13 @@
   }
 
   .sidebar-glow-primary {
-    @apply pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/20 blur-3xl;
+    @apply pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full blur-3xl;
+    background-color: hsl(var(--primary) / 0.2);
   }
 
   .sidebar-glow-secondary {
-    @apply pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-violet-500/15 blur-3xl;
+    @apply pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full blur-3xl;
+    background-color: rgb(139 92 246 / 0.15);
   }
 }
 
@@ -271,7 +285,8 @@
 }
 
 .landing-glass {
-  @apply bg-white/[0.03] backdrop-blur-xl;
+  @apply backdrop-blur-xl;
+  background-color: rgb(255 255 255 / 0.03);
 }
 
 .landing-glow {
