@@ -46,7 +46,7 @@ import { AddUserModal } from "@/components/users/add-user-modal";
 import { EditUserModal } from "@/components/users/edit-user-modal";
 
 type User = {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role: string;

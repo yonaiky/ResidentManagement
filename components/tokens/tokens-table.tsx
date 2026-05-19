@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { invalidateCache } from "@/lib/client-fetch-cache";
 import Link from "next/link";
 import { 
   Table, 
@@ -63,36 +65,22 @@ type Token = {
 
 export function TokensTable() {
   const { toast } = useToast();
-  const [tokens, setTokens] = useState<Token[]>([]);
+  const {
+    data: tokensData,
+    isLoading,
+    refresh,
+  } = useApiQuery<Token[]>("tokens-list", "/api/tokens");
+  const tokens = tokensData ?? [];
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [tokenToDelete, setTokenToDelete] = useState<Token | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [tokenToEdit, setTokenToEdit] = useState<Token | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  useEffect(() => {
-    fetchTokens();
-  }, []);
-
-  async function fetchTokens() {
-    try {
-      const response = await fetch('/api/tokens');
-      if (!response.ok) {
-        throw new Error('Error fetching tokens');
-      }
-      const data = await response.json();
-      setTokens(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los tokens",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const reloadTokens = () => {
+    invalidateCache("tokens-list");
+    void refresh();
+  };
 
   const handleEdit = (token: Token) => {
     setTokenToEdit(token);
@@ -115,7 +103,7 @@ export function TokensTable() {
         throw new Error('Error al eliminar el token');
       }
 
-      setTokens(tokens.filter(t => t.id !== tokenToDelete.id));
+      reloadTokens();
       toast({
         title: "Token eliminado",
         description: "El token ha sido eliminado exitosamente",
@@ -264,14 +252,14 @@ export function TokensTable() {
       <AddTokenModal
         open={showAddModal}
         onOpenChange={setShowAddModal}
-        onSuccess={fetchTokens}
+        onSuccess={reloadTokens}
       />
 
       <EditTokenModal
         token={tokenToEdit}
         open={showEditModal}
         onOpenChange={setShowEditModal}
-        onSuccess={fetchTokens}
+        onSuccess={reloadTokens}
       />
 
       <AlertDialog open={!!tokenToDelete} onOpenChange={() => setTokenToDelete(null)}>

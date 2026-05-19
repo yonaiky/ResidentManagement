@@ -1,26 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
 
-async function checkUsers() {
+async function main() {
   try {
-    const count = await prisma.user.count();
-    console.log(`\nTotal users in database: ${count}\n`);
-    
+    const count = await prisma.profile.count();
+    console.log(`Total profiles: ${count}`);
+
     if (count > 0) {
-      const users = await prisma.user.findMany();
-      console.log('Users:');
-      users.forEach(user => {
-        console.log(`- ID: ${user.id}`);
-        console.log(`  Username: ${user.username}`);
-        console.log(`  Email: ${user.email}`);
-        console.log(`  Role: ${user.role}`);
-        console.log(`  Active: ${user.isActive}`);
-        console.log(`  Created: ${user.createdAt}`);
-        console.log('');
+      const profiles = await prisma.profile.findMany({
+        select: { id: true, username: true, email: true, role: true, isActive: true },
       });
-    } else {
-      console.log('No users found in the database.');
-      console.log('You can register a new user at: http://localhost:3000/register');
+      console.table(profiles);
     }
   } catch (error) {
     console.error('Error:', error);
@@ -29,4 +20,4 @@ async function checkUsers() {
   }
 }
 
-checkUsers();
+main();

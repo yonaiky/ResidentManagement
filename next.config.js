@@ -18,7 +18,7 @@ const nextConfig = {
   
   experimental: {
     serverActions: true,
-    optimizeCss: true,
+    // optimizeCss pulls in `critters` and increases build RAM; disabled for small VPS builds
   },
   
   webpack: (config, { isServer }) => {

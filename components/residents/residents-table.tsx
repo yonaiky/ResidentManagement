@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { invalidateCache } from "@/lib/client-fetch-cache";
 import Link from "next/link";
 import { 
   Table, 
@@ -70,16 +72,18 @@ type Resident = {
   lastPaymentDate: string | null;
   nextPaymentDate: string | null;
   tokens: any[];
-  payments: any[];
-  notifications: any[];
   createdAt: string;
 };
 
 export function ResidentsTable() {
   const { toast } = useToast();
-  const [residents, setResidents] = useState<Resident[]>([]);
+  const {
+    data: residentsData,
+    isLoading,
+    refresh,
+  } = useApiQuery<Resident[]>("residents-list", "/api/residents");
+  const residents = residentsData ?? [];
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
@@ -89,29 +93,6 @@ export function ResidentsTable() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [residentForWhatsApp, setResidentForWhatsApp] = useState<Resident | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  useEffect(() => {
-    fetchResidents();
-  }, []);
-
-  async function fetchResidents() {
-    try {
-      const response = await fetch('/api/residents');
-      if (!response.ok) {
-        throw new Error('Error fetching residents');
-      }
-      const data = await response.json();
-      setResidents(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los residentes",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   const handleDelete = async (resident: Resident) => {
     setResidentToDelete(resident);
@@ -129,7 +110,8 @@ export function ResidentsTable() {
         throw new Error('Error al eliminar el residente');
       }
 
-      setResidents(residents.filter(r => r.id !== residentToDelete.id));
+      invalidateCache("residents-list");
+      void refresh();
       toast({
         title: "Residente eliminado",
         description: "El residente ha sido eliminado exitosamente",
@@ -407,14 +389,20 @@ export function ResidentsTable() {
       <AddResidentModal
         open={showAddModal}
         onOpenChange={setShowAddModal}
-        onSuccess={fetchResidents}
+        onSuccess={() => {
+          invalidateCache("residents-list");
+          void refresh();
+        }}
       />
 
       <EditResidentModal
         resident={residentToEdit}
         open={showEditModal}
         onOpenChange={setShowEditModal}
-        onSuccess={fetchResidents}
+        onSuccess={() => {
+          invalidateCache("residents-list");
+          void refresh();
+        }}
       />
 
       <SendMessageModal
@@ -444,7 +432,8 @@ export function ResidentsTable() {
             <EnhancedPaymentForm
               resident={selectedResident}
               onSuccess={() => {
-                fetchResidents();
+                invalidateCache("residents-list");
+                void refresh();
                 setShowPaymentDialog(false);
               }}
               onClose={() => setShowPaymentDialog(false)}

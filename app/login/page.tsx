@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -25,56 +25,81 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, User, Lock, Building2, Eye, EyeOff, Shield, Users, CreditCard } from "lucide-react";
+import { Loader2, User, Lock, Building2, Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { LoginLayout } from "@/components/auth/login-layout";
 
 const formSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  identifier: z.string().min(1, "Usuario o email es requerido"),
+  password: z.string().min(1, "Contraseña es requerida"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (searchParams.get("unconfirmed") === "1") {
+      toast({
+        title: "Confirma tu email",
+        description: "Revisa tu bandeja de entrada y haz clic en el enlace de confirmación.",
+        variant: "destructive",
+      });
+    }
+    if (searchParams.get("error") === "auth_callback") {
+      toast({
+        title: "Error de autenticación",
+        description: "No se pudo completar el inicio de sesión. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
+    defaultValues: { identifier: "", password: "" },
   });
 
   async function onSubmit(data: FormData) {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/auth/login", {
+
+      const resolveRes = await fetch("/api/auth/resolve-email", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: data.identifier }),
       });
 
-      const result = await response.json();
+      const resolveData = await resolveRes.json();
+      if (!resolveRes.ok) {
+        throw new Error(resolveData.error || "Credenciales inválidas");
+      }
 
-      if (!response.ok) {
-        throw new Error(result.error || "Login failed");
+      const { error } = await supabase.auth.signInWithPassword({
+        email: resolveData.email,
+        password: data.password,
+      });
+
+      if (error) {
+        if (error.message.toLowerCase().includes("email not confirmed")) {
+          throw new Error("Confirma tu email antes de iniciar sesión.");
+        }
+        throw new Error(error.message);
       }
 
       toast({
         title: "¡Bienvenido de vuelta!",
-        description: `Hola ${result.user.username}, has iniciado sesión correctamente.`,
+        description: "Has iniciado sesión correctamente.",
       });
 
-      // Get the redirect URL from the query parameters
-      const searchParams = new URLSearchParams(window.location.search);
-      const redirectTo = searchParams.get('from') || '/';
-      
-      router.push(redirectTo);
+      const from = searchParams.get("from");
+      router.push(from && from !== "/" ? from : "/dashboard");
       router.refresh();
     } catch (error) {
       toast({
@@ -88,181 +113,117 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      
-      {/* Floating Elements */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-      
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center relative z-10">
-        {/* Left Side - Branding */}
-        <div className="hidden lg:flex flex-col justify-center space-y-8">
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 p-4 shadow-2xl">
-                <Building2 className="h-12 w-12 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-                  Resident Management
-                </h1>
-                <p className="text-xl text-muted-foreground">Sistema de Gestión Residencial</p>
-              </div>
-            </div>
-            
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Administra tu comunidad residencial de manera eficiente. Gestiona residentes, 
-              pagos, tokens de acceso y mantén todo organizado en un solo lugar.
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="grid gap-6">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20">
-              <div className="rounded-lg bg-blue-500/10 p-3">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Gestión de Residentes</h3>
-                <p className="text-sm text-muted-foreground">Administra información completa de todos los residentes</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20">
-              <div className="rounded-lg bg-emerald-500/10 p-3">
-                <CreditCard className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Control de Pagos</h3>
-                <p className="text-sm text-muted-foreground">Seguimiento automático de pagos y recordatorios</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20">
-              <div className="rounded-lg bg-purple-500/10 p-3">
-                <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Seguridad Avanzada</h3>
-                <p className="text-sm text-muted-foreground">Control de acceso y tokens de seguridad</p>
-              </div>
-            </div>
+    <Card className="landing-glass w-full max-w-md border-white/10 shadow-2xl shadow-violet-500/10">
+      <CardHeader className="space-y-4 pb-6 text-center">
+        <div className="flex justify-center lg:hidden">
+          <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-3 shadow-lg shadow-violet-500/25">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
         </div>
+        <CardTitle className="text-2xl font-bold text-white">Iniciar sesión</CardTitle>
+        <CardDescription className="text-slate-400">
+          Accede a tu cuenta de Resident Management
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="identifier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">Usuario o Email</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Input
+                        placeholder="Usuario o email"
+                        className="h-11 border-white/10 bg-white/5 pl-10 text-white placeholder:text-slate-500"
+                        {...field}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-300">Contraseña</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Contraseña"
+                        className="h-11 border-white/10 bg-white/5 pl-10 pr-10 text-white placeholder:text-slate-500"
+                        {...field}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-white"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm text-violet-400 hover:text-violet-300">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+            <Button
+              type="submit"
+              className="h-11 w-full bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-violet-500/25"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Iniciando sesión...
+                </>
+              ) : (
+                "Iniciar sesión"
+              )}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex justify-center border-t border-white/5 pt-6">
+        <p className="text-sm text-slate-400">
+          ¿No tienes cuenta?{" "}
+          <Link href="/register" className="font-medium text-violet-400 hover:text-violet-300">
+            Regístrate
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}
 
-        {/* Right Side - Login Form */}
-        <div className="flex justify-center">
-          <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
-            <CardHeader className="space-y-4 text-center pb-8">
-              <div className="flex justify-center mb-6 lg:hidden">
-                <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 p-4 shadow-lg">
-                  <Building2 className="h-10 w-10 text-white" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-                  Bienvenido
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Inicia sesión en tu cuenta de gestión residencial
-                </CardDescription>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">Usuario o Email</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              placeholder="Ingresa tu usuario o email"
-                              className="pl-10 h-12 bg-muted/50 border-0 focus:bg-background transition-colors"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">Contraseña</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Ingresa tu contraseña"
-                              className="pl-10 pr-10 h-12 bg-muted/50 border-0 focus:bg-background transition-colors"
-                              {...field}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <Eye className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg transition-all duration-200 hover:shadow-xl" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Iniciando sesión...
-                      </>
-                    ) : (
-                      "Iniciar Sesión"
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-            
-            <CardFooter className="text-center pt-6">
-              <p className="text-sm text-muted-foreground">
-                ¿No tienes una cuenta?{" "}
-                <Link
-                  href="/register"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Regístrate aquí
-                </Link>
-              </p>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    </div>
+export default function LoginPage() {
+  return (
+    <LoginLayout>
+      <Suspense
+        fallback={
+          <div className="flex h-64 w-full max-w-md items-center justify-center text-slate-400">
+            Cargando...
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
+    </LoginLayout>
   );
 }

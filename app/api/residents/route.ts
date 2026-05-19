@@ -4,24 +4,21 @@ import { prisma } from "@/lib/prisma";
 // Obtener todos los residentes
 export async function GET() {
   try {
-    const residents = await prisma.resident.findMany({
-      include: {
-        tokens: true,
-        payments: true,
-        notifications: true,
+    const today = new Date();
+    await prisma.resident.updateMany({
+      where: {
+        nextPaymentDate: { lt: today },
+        paymentStatus: 'pending',
       },
+      data: { paymentStatus: 'overdue' },
     });
 
-    // Actualizar el estado de pago de los residentes
-    const today = new Date();
-    for (const resident of residents) {
-      if (resident.nextPaymentDate && new Date(resident.nextPaymentDate) < today && resident.paymentStatus === 'pending') {
-        await prisma.resident.update({
-          where: { id: resident.id },
-          data: { paymentStatus: 'overdue' },
-        });
-      }
-    }
+    const residents = await prisma.resident.findMany({
+      include: {
+        tokens: { select: { id: true, name: true, status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return NextResponse.json(residents);
   } catch (error) {

@@ -44,9 +44,6 @@ import {
   Loader2,
   Edit
 } from "lucide-react";
-import Header from '@/components/layout/header';
-import Sidebar from '@/components/layout/sidebar';
-import { Footer } from '@/components/ui/footer';
 import { DGIInvoiceGenerator, type CompanyInfo } from "@/lib/invoice-generator";
 import { IMaskInput } from "react-imask";
 import { InputMask } from "@/components/ui/input-mask";
@@ -373,39 +370,22 @@ export default function SettingsPage() {
   // Check if user has permission to access settings
   if (currentUser && currentUser.role !== 'admin') {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-        <Header />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-            <div className="mx-auto max-w-7xl animate-fade-in">
-              <div className="text-center py-12">
+      <div className="text-center py-12">
                 <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <h1 className="text-2xl font-bold text-muted-foreground mb-2">Acceso Denegado</h1>
                 <p className="text-muted-foreground">
                   Solo los administradores pueden acceder a la configuración del sistema.
                 </p>
               </div>
-            </div>
-          </main>
-        </div>
-        <Footer />
-      </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-          <div className="mx-auto max-w-7xl animate-fade-in">
-            <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8">
               {/* Header Section */}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
-                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                  <h1 className="page-title">
                     Configuración Fiscal
                   </h1>
                   <p className="text-lg text-muted-foreground">
@@ -456,9 +436,9 @@ export default function SettingsPage() {
 
                   <TabsContent value="company" className="space-y-6">
                     <Card className="card-hover">
-                      <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50">
+                      <CardHeader className="card-accent-header">
                         <CardTitle className="flex items-center gap-2">
-                          <div className="rounded-lg bg-blue-500/10 p-2">
+                          <div className="icon-badge">
                             <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                           </div>
                           Datos de la Empresa
@@ -617,7 +597,7 @@ export default function SettingsPage() {
 
                   <TabsContent value="fiscal" className="space-y-6">
                     <Card className="card-hover">
-                      <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50">
+                      <CardHeader className="card-accent-header">
                         <CardTitle className="flex items-center gap-2">
                           <div className="rounded-lg bg-green-500/10 p-2">
                             <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -797,9 +777,9 @@ export default function SettingsPage() {
 
                   <TabsContent value="invoice" className="space-y-6">
                     <Card className="card-hover">
-                      <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
+                      <CardHeader className="card-accent-header">
                         <CardTitle className="flex items-center gap-2">
-                          <div className="rounded-lg bg-purple-500/10 p-2">
+                          <div className="icon-badge-violet">
                             <Receipt className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                           </div>
                           Parámetros de Facturación
@@ -936,10 +916,5 @@ export default function SettingsPage() {
                 </Tabs>
               )}
             </div>
-          </div>
-        </main>
-      </div>
-      <Footer />
-    </div>
   );
 }

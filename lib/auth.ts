@@ -1,104 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import { createClient } from '@/lib/supabase/server';
+import { prisma } from '@/lib/prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-export interface User {
-  id: number;
+export interface AuthUser {
+  userId: string;
   username: string;
   email: string;
   role: string;
-  isActive: boolean;
 }
 
-export interface JWTPayload {
-  userId: number;
-  username: string;
-  role: string;
-  iat?: number;
-  exp?: number;
-}
-
-export function generateToken(user: User): string {
-  const payload: JWTPayload = {
-    userId: user.id,
-    username: user.username,
-    role: user.role,
-  };
-  
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-}
-
-export function verifyToken(token: string): JWTPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch (error) {
-    console.error('Token verification error:', error);
-    return null;
-  }
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12);
-}
-
-export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-  return bcrypt.compare(password, hashedPassword);
-}
-
-export function getUserFromRequest(request: NextRequest): JWTPayload | null {
-  const token = request.cookies.get('auth-token')?.value;
-  if (!token) return null;
-  
-  return verifyToken(token);
-}
+const roleHierarchy = {
+  admin: 3,
+  manager: 2,
+  user: 1,
+} as const;
 
 export function hasPermission(userRole: string, requiredRole: string): boolean {
-  const roleHierarchy = {
-    'admin': 3,
-    'manager': 2,
-    'user': 1
-  };
-  
   const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0;
   const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
-  
   return userLevel >= requiredLevel;
 }
 
-export function setAuthCookies(response: NextResponse, token: string) {
-  response.cookies.set('auth-token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7
+export async function getAuthUser(): Promise<AuthUser | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return null;
+  }
+
+  if (!user.email_confirmed_at) {
+    return null;
+  }
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
   });
 
-  response.cookies.set('auth-status', 'authenticated', {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7
-  });
-}
+  if (!profile || !profile.isActive) {
+    return null;
+  }
 
-export function clearAuthCookies(response: NextResponse) {
-  response.cookies.set('auth-token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
-
-  response.cookies.set('auth-status', '', {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
+  return {
+    userId: profile.id,
+    username: profile.username,
+    email: profile.email,
+    role: profile.role,
+  };
 }

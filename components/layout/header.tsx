@@ -1,11 +1,25 @@
 "use client";
 
-import { Bell, Menu, Moon, Search, Sun, User, LogOut, Settings, Building2, CheckCircle, AlertCircle, Clock, Key } from "lucide-react";
+import {
+  Bell,
+  Menu,
+  Search,
+  User,
+  LogOut,
+  Settings,
+  Building2,
+  CheckCircle,
+  Clock,
+  Key,
+  PanelLeft,
+  Plus,
+  Command,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +28,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useTheme } from "next-themes";
-import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect, memo } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useSidebar } from "@/hooks/use-sidebar";
+import { useAuthUserStore } from "@/store/auth-user-store";
+import { fetchWithCache } from "@/lib/client-fetch-cache";
 
 type User = {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role: string;
@@ -37,69 +54,55 @@ type Activity = {
   status?: 'success' | 'warning' | 'info';
 };
 
-function Header() {
-  const { theme, setTheme } = useTheme();
-  const pathname = usePathname();
+type HeaderProps = {
+  premium?: boolean;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+};
+
+function Header({ premium = true, onToggleSidebar }: HeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const user = useAuthUserStore((s) => s.user);
+  const fetchUser = useAuthUserStore((s) => s.fetchUser);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { openMobile, toggleCollapsed } = useSidebar();
+  const handleToggleSidebar = onToggleSidebar ?? toggleCollapsed;
 
   useEffect(() => {
     fetchUser();
     fetchActivities();
-  }, []);
-
-  const fetchUser = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-    }
-  };
+  }, [fetchUser]);
 
   const fetchActivities = async () => {
     try {
-      const response = await fetch('/api/activities');
-      if (!response.ok) {
-        throw new Error('Error al obtener las actividades');
-      }
-      const data = await response.json();
+      const data = await fetchWithCache<Activity[]>(
+        "header-activities",
+        "/api/activities",
+        { ttlMs: 30_000 }
+      );
       setActivities(data);
       setUnreadCount(data.length);
     } catch (error) {
       console.error('Error fetching activities:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las actividades recientes",
-        variant: "destructive",
-      });
     }
   };
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente",
       });
-
-      if (response.ok) {
-        toast({
-          title: "Logged out",
-          description: "You have been successfully logged out",
-        });
-        router.push('/login');
-        router.refresh();
-      }
+      router.push('/login');
+      router.refresh();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to logout",
+        description: "No se pudo cerrar sesión",
         variant: "destructive",
       });
     }
@@ -120,60 +123,81 @@ function Header() {
       case 'notification':
         return <Bell className="h-4 w-4 text-orange-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between px-4 md:px-8 w-full">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="pr-0">
-              <MobileNav />
-            </SheetContent>
-          </Sheet>
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+    <header
+      className={cn(
+        "sticky top-0 z-30 w-full shrink-0 border-b backdrop-blur-xl supports-[backdrop-filter]:bg-background/80",
+        premium
+          ? "border-border/30 bg-background/80 dark:bg-background/60"
+          : "border-border/40 bg-background/95"
+      )}
+    >
+      <div
+        className={cn(
+          "flex w-full items-center justify-between px-4 md:px-6",
+          premium ? "h-[4.5rem]" : "h-16"
+        )}
+      >
+        <div className="flex items-center gap-2 md:gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={openMobile}
+            aria-label="Abrir menú"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <Link
+            href="/dashboard"
+            prefetch
+            className="flex items-center gap-3 transition-opacity hover:opacity-80 md:hidden"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
               <Building2 className="h-5 w-5" />
             </div>
-            <div className="hidden flex-col md:flex">
+            <div className="flex flex-col">
               <span className="text-sm font-bold leading-tight">Resident</span>
               <span className="text-xs text-muted-foreground leading-tight">Management</span>
             </div>
           </Link>
         </div>
         
-        <div className="flex-1 px-2 md:px-12">
-          <form className="hidden md:block">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search residents, tokens, payments..."
-                className="w-full bg-muted/50 pl-10 focus:bg-background"
-              />
-            </div>
-          </form>
+        <div className="flex-1 px-2 md:max-w-xl md:px-6">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("open-command-palette"))}
+            className={cn(
+              "hidden w-full items-center gap-2 rounded-xl border px-4 py-2 text-sm text-muted-foreground transition-colors md:flex",
+              premium
+                ? "border-border/50 bg-muted/30 hover:bg-muted/50"
+                : "border-transparent bg-muted/50 hover:bg-muted"
+            )}
+          >
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Buscar residentes, pagos, tokens...</span>
+            {premium && (
+              <kbd className="hidden items-center gap-0.5 rounded-md border border-border/60 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium lg:inline-flex">
+                <Command className="h-3 w-3" />K
+              </kbd>
+            )}
+          </button>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
+        <div className="flex items-center gap-1.5">
+          {premium && (
+            <Button size="sm" className="hidden gap-1.5 shadow-lg shadow-primary/20 sm:flex" asChild>
+              <Link href="/residents">
+                <Plus className="h-4 w-4" />
+                Nuevo
+              </Link>
+            </Button>
+          )}
+          <ThemeToggle />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

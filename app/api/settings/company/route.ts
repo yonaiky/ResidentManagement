@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { settingsService } from '@/lib/services/settings';
-import { getUserFromRequest, hasPermission } from '@/lib/auth';
+import { getAuthUser, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    const userPayload = getUserFromRequest(request);
+    const authUser = await getAuthUser();
     
-    if (!userPayload || !hasPermission(userPayload.role, 'admin')) {
+    if (!authUser || !hasPermission(authUser.role, 'admin')) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const userPayload = getUserFromRequest(request);
+    const authUser = await getAuthUser();
     
-    if (!userPayload || !hasPermission(userPayload.role, 'admin')) {
+    if (!authUser || !hasPermission(authUser.role, 'admin')) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

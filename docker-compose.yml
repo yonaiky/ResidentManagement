@@ -2,22 +2,25 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     ports:
       - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
     environment:
       - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=384
       - DATABASE_URL=${DATABASE_URL}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - EMAIL_SERVER_HOST=${EMAIL_SERVER_HOST}
-      - EMAIL_SERVER_PORT=${EMAIL_SERVER_PORT}
-      - EMAIL_SERVER_USER=${EMAIL_SERVER_USER}
-      - EMAIL_SERVER_PASSWORD=${EMAIL_SERVER_PASSWORD}
-      - EMAIL_FROM=${EMAIL_FROM}
+      - DIRECT_URL=${DIRECT_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
+      - EVOLUTION_API_TOKEN=${EVOLUTION_API_TOKEN}
     restart: unless-stopped
-    command: sh -c "npx prisma generate && npm start" 

@@ -6,72 +6,74 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
+model Profile {
+  id        String   @id @db.Uuid
   username  String   @unique
   email     String   @unique
-  password  String
-  role      String   @default("user") // admin, manager, user
+  role      String   @default("user")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("Profile")
 }
 
 model Resident {
-  id              Int           @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   name            String
   lastName        String
-  cedula          String        @unique
-  noRegistro      String?       @unique @map("NoRegistro")
+  cedula          String         @unique
+  noRegistro      String?        @unique @map("NoRegistro")
   phone           String
   email           String?
   address         String
-  paymentStatus   String        @default("pending")
+  paymentStatus   String         @default("pending")
   lastPaymentDate DateTime?
   nextPaymentDate DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   tokens          Token[]
   notifications   Notification[]
   payments        Payment[]
 }
 
 model Token {
-  id              Int           @id @default(autoincrement())
-  name            String
-  status          String        @default("active")
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id         Int      @id @default(autoincrement())
+  name       String
+  status     String   @default("active")
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Payment {
-  id              Int           @id @default(autoincrement())
-  amount          Float
-  status          String        @default("completed")
-  paymentDate     DateTime      @default(now())
-  dueDate         DateTime      // Fecha de vencimiento del mes
-  month           Int           @default(1)
-  year            Int           @default(2024)
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  status      String   @default("completed")
+  paymentDate DateTime @default(now())
+  dueDate     DateTime
+  month       Int      @default(1)
+  year        Int      @default(2024)
+  residentId  Int
+  resident    Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Notification {
-  id              Int           @id @default(autoincrement())
-  message         String
-  type            String        @default("info")
-  read            Boolean       @default(false)
-  residentId      Int
-  resident        Resident      @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  createdAt       DateTime      @default(now())
+  id         Int      @id @default(autoincrement())
+  message    String
+  type       String   @default("info")
+  read       Boolean  @default(false)
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
 
 model CompanyInfo {
@@ -113,8 +115,8 @@ model InvoiceConfig {
   id                  Int      @id @default(autoincrement())
   paymentTerms        String
   latePaymentInterest Float
-  itbisRate          Float
-  footerNotes        String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  itbisRate           Float
+  footerNotes         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

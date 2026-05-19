@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
 
 type User = {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role: string;
@@ -46,7 +46,7 @@ export function MobileNav() {
 
   const routes = [
     {
-      href: "/",
+      href: "/dashboard",
       label: "Dashboard",
       icon: Home,
     },

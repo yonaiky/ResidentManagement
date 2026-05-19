@@ -19,7 +19,7 @@ export function MainNav() {
 
   return (
     <div className="mr-4 hidden md:flex">
-      <Link href="/" className="mr-6 flex items-center space-x-2">
+      <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
         <Building2 className="h-6 w-6" />
         <span className="hidden font-bold sm:inline-block">
           Resident Management
@@ -27,10 +27,10 @@ export function MainNav() {
       </Link>
       <nav className="flex items-center space-x-6 text-sm font-medium">
         <Link
-          href="/"
+          href="/dashboard"
           className={cn(
             "transition-colors hover:text-foreground/80",
-            pathname === "/" ? "text-foreground" : "text-foreground/60"
+            pathname === "/dashboard" ? "text-foreground" : "text-foreground/60"
           )}
         >
           <div className="flex items-center gap-2">

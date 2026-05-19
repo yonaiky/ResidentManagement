@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { invalidateCache } from "@/lib/client-fetch-cache";
 import Link from "next/link";
 import { 
   Table, 
@@ -34,8 +36,6 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { es } from 'date-fns/locale';
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 type Payment = {
   id: number;
@@ -52,34 +52,17 @@ type Payment = {
 };
 
 export function PaymentsTable() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: paymentsData, isLoading: loading } = useApiQuery<Payment[]>(
+    "payments-list",
+    "/api/payments"
+  );
+  const payments = paymentsData ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  const fetchPayments = async () => {
+  const generateReceipt = async (payment: Payment) => {
     try {
-      const res = await fetch('/api/payments');
-      if (!res.ok) throw new Error("Error al cargar los pagos");
-      const data = await res.json();
-      setPayments(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los pagos",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateReceipt = (payment: Payment) => {
-    try {
+      const { default: jsPDF } = await import("jspdf");
       const doc = new jsPDF();
       
       // Título
@@ -112,8 +95,13 @@ export function PaymentsTable() {
     }
   };
 
-  const exportToExcel = (payment: Payment) => {
+  const exportToExcel = async (payment: Payment) => {
     try {
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const autoTable = autoTableModule.default;
       const data = [
         ['Residente', payment.residentName],
         ['No. Registro', payment.noRegistro],

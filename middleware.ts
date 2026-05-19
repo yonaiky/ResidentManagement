@@ -1,48 +1,49 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
-export function middleware(request: NextRequest) {
+const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Skip middleware for API routes and static files
+
   if (
-    pathname.startsWith('/api/') || 
-    pathname.startsWith('/_next/') || 
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/') ||
     pathname.includes('_rsc') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    pathname.startsWith('/auth/callback')
   ) {
-    return NextResponse.next();
+    const { response } = await updateSession(request);
+    return response;
   }
-  
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register'];
-  
-  // Check if the current path is a public route
-  if (publicRoutes.includes(pathname)) {
-    // If user is already authenticated and trying to access login/register, redirect to dashboard
-    const isAuthenticated = request.cookies.has('auth-token');
-    if (isAuthenticated) {
-      return NextResponse.redirect(new URL('/', request.url));
+
+  const { response, user } = await updateSession(request);
+  const isPublicRoute = publicRoutes.includes(pathname);
+
+  if (isPublicRoute) {
+    if (user?.email_confirmed_at) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    return NextResponse.next();
+    return response;
   }
-  
-  // For all other routes, check authentication
-  const isAuthenticated = request.cookies.has('auth-token');
-  
-  if (!isAuthenticated) {
-    // Store the original URL to redirect back after login
+
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('from', request.nextUrl.pathname);
+    url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);
   }
-  
-  return NextResponse.next();
+
+  if (!user.email_confirmed_at) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('unconfirmed', '1');
+    return NextResponse.redirect(url);
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

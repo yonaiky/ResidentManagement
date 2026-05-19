@@ -5,61 +5,112 @@ Sistema de gestión de residentes para condominios.
 ## Requisitos
 
 - Node.js 18 o superior
-- npm o yarn
-- Git
+- Cuenta en [Supabase](https://supabase.com) (PostgreSQL + Auth)
+- npm
 
-## Configuración del Proyecto
+## Configuración de Supabase
 
-1. Clona el repositorio:
-```bash
-git clone https://github.com/yonaiky/ResidentManagement.git
-cd ResidentManagement
-```
+1. Crea un proyecto en Supabase.
+2. **Authentication → Providers → Email**: activa **Confirm email**.
+3. **Authentication → URL Configuration**:
+   - Site URL: `http://localhost:3000` (desarrollo) o tu dominio en producción
+   - Redirect URLs: `http://localhost:3000/auth/callback` (y el equivalente en producción)
+4. **Project Settings → Database**: copia las cadenas de conexión:
+   - `DATABASE_URL` — Transaction pooler (puerto 6543, `?pgbouncer=true`)
+   - `DIRECT_URL` — Conexión directa (puerto 5432) para migraciones
+5. **Project Settings → API**: copia `URL`, `anon key` y `service_role key`.
+6. Copia `.env.example` a `.env` y completa las variables.
+7. En el **SQL Editor** de Supabase, ejecuta el contenido de [`prisma/supabase-auth-trigger.sql`](prisma/supabase-auth-trigger.sql).
 
-2. Instala las dependencias:
+## Configuración local
+
 ```bash
 npm install
-```
-
-3. Configura la base de datos:
-```bash
-# Genera el cliente de Prisma
 npx prisma generate
-
-# Ejecuta las migraciones y crea la base de datos
-npx prisma migrate dev
-```
-
-4. Inicia el servidor de desarrollo:
-```bash
+npx prisma migrate deploy   # o: npx prisma migrate dev
 npm run dev
 ```
 
-## Estructura de la Base de Datos
+Abre [http://localhost:3000](http://localhost:3000).
 
-El proyecto usa Prisma como ORM. La base de datos es SQLite y se almacena localmente en `prisma/dev.db`. Este archivo está excluido del control de versiones para evitar conflictos entre diferentes entornos de desarrollo.
+### Primer administrador
 
-### Notas importantes sobre la base de datos:
+No existe admin por defecto. Crea uno con:
 
-- Cada desarrollador debe tener su propia base de datos local
-- La base de datos se crea automáticamente al ejecutar `npx prisma migrate dev`
-- Si hay cambios en el esquema, ejecuta `npx prisma migrate dev` para actualizar la base de datos
-- Para ver la base de datos en el Prisma Studio, ejecuta `npx prisma studio`
+```bash
+ADMIN_EMAIL=admin@tudominio.com ADMIN_PASSWORD=tu-password-seguro ADMIN_USERNAME=admin npx tsx scripts/seed-admin.ts
+```
 
-## Scripts Disponibles
+O regístrate en `/register` (rol `user`) y promueve el usuario en la tabla `Profile` desde Supabase SQL:
 
-- `npm run dev`: Inicia el servidor de desarrollo
-- `npm run build`: Construye la aplicación para producción
-- `npm start`: Inicia la aplicación en modo producción
-- `npm run lint`: Ejecuta el linter
-- `npm run format`: Formatea el código
+```sql
+UPDATE "Profile" SET role = 'admin' WHERE email = 'tu@email.com';
+```
 
-## Tecnologías Utilizadas
+## Autenticación
 
-- Next.js 14
-- React
-- TypeScript
-- Prisma
-- SQLite
-- Tailwind CSS
-- Shadcn/ui
+- **Registro público** (`/register`): solo crea usuarios con rol `user`. Requiere confirmar el email.
+- **Login** (`/login`): email o nombre de usuario + contraseña.
+- **Recuperar contraseña**: `/forgot-password` y `/reset-password`.
+- **Gestión de usuarios** (`/users`): solo `admin` y `manager`; crear roles elevados solo `admin`.
+
+## Scripts
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm start` | Servidor de producción |
+| `npm run lint` | ESLint |
+| `npx prisma studio` | Explorar base de datos |
+| `npx prisma migrate deploy` | Aplicar migraciones (producción) |
+
+## Despliegue en Coolify (VPS ~512 MB RAM)
+
+La app no lleva Postgres ni Auth en el VPS: **Supabase** hace esa parte. El `Dockerfile` usa build **multi-stage** + salida **standalone** de Next.js para usar poca RAM en runtime.
+
+### Variables en Coolify (Runtime)
+
+| Variable | Notas |
+|----------|--------|
+| `DATABASE_URL` | Pooler Supabase (puerto **6543**, `?pgbouncer=true`) |
+| `DIRECT_URL` | Conexión directa (puerto **5432**) — migraciones |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon / JWT legacy |
+| `SUPABASE_SERVICE_ROLE_KEY` | Solo servidor |
+| `NEXT_PUBLIC_APP_URL` | `https://tu-dominio.com` |
+| `NODE_OPTIONS` | `--max-old-space-size=384` (recomendado) |
+
+### Build args en Coolify (necesarios en el build)
+
+| Build arg | Mismo valor que en runtime |
+|-----------|---------------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Sí |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sí |
+| `NEXT_PUBLIC_APP_URL` | Sí |
+
+### Checklist Supabase
+
+1. **Authentication → URL Configuration**: Site URL y redirect `https://tu-dominio.com/auth/callback`
+2. SQL de [`prisma/supabase-auth-trigger.sql`](prisma/supabase-auth-trigger.sql) ya ejecutado en el proyecto
+3. Primer admin: `npm run seed:admin` en local o usuario creado en dashboard
+
+### Recursos sugeridos en Coolify
+
+- **Build**: si falla por RAM, activa build remoto o añade **1 GB swap** en el VPS
+- **Runtime**: límite de memoria del contenedor ~**448–512 MB**
+
+### Docker local (opcional)
+
+```bash
+docker compose up -d --build
+```
+
+Al arrancar: `prisma migrate deploy` y luego `node server.js` (standalone).
+
+## Tecnologías
+
+- Next.js 13 (App Router)
+- Supabase Auth + PostgreSQL
+- Prisma ORM
+- Tailwind CSS + shadcn/ui

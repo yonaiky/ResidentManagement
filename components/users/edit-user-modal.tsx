@@ -42,7 +42,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type User = {
-  id: number;
+  id: string;
   username: string;
   email: string;
   role: string;
@@ -54,7 +54,7 @@ interface EditUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  currentUserId?: number;
+  currentUserId?: string;
 }
 
 export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUserId }: EditUserModalProps) {

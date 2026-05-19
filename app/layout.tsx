@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthWrapper } from '@/components/auth/auth-wrapper';
+import { themeInitScript } from '@/lib/theme/script';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -29,14 +31,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
-      <body className={`${inter.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={true}
-        >
-          {children}
+    <html lang="es" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className={inter.className}>
+        <ThemeProvider>
+          <AuthWrapper>{children}</AuthWrapper>
           <Toaster />
         </ThemeProvider>
       </body>

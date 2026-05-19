@@ -32,9 +32,6 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Loader2, UserPlus, Shield } from "lucide-react";
 import Link from "next/link";
-import Header from '@/components/layout/header';
-import Sidebar from '@/components/layout/sidebar';
-import { Footer } from '@/components/ui/footer';
 
 const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -114,13 +111,7 @@ export default function NewUserPage() {
   // Check if user has permission to create users
   if (currentUser && currentUser.role !== 'admin') {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-        <Header />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-            <div className="mx-auto max-w-7xl animate-fade-in">
-              <div className="text-center py-12">
+      <div className="text-center py-12">
                 <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <h1 className="text-2xl font-bold text-muted-foreground mb-2">Acceso Denegado</h1>
                 <p className="text-muted-foreground">
@@ -133,22 +124,11 @@ export default function NewUserPage() {
                   </Button>
                 </Link>
               </div>
-            </div>
-          </main>
-        </div>
-        <Footer />
-      </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-4 pt-20 md:p-8 md:pt-20 lg:p-12 lg:pt-24">
-          <div className="mx-auto max-w-7xl animate-fade-in">
-            <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8">
               {/* Header Section */}
               <div className="flex items-center gap-4">
                 <Link href="/users">
@@ -157,7 +137,7 @@ export default function NewUserPage() {
                   </Button>
                 </Link>
                 <div className="space-y-2">
-                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                  <h1 className="page-title">
                     Nuevo Usuario
                   </h1>
                   <p className="text-lg text-muted-foreground">
@@ -168,9 +148,9 @@ export default function NewUserPage() {
 
               {/* Main Content */}
               <Card className="card-hover max-w-2xl">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50">
+                <CardHeader className="card-accent-header">
                   <CardTitle className="flex items-center gap-2">
-                    <div className="rounded-lg bg-indigo-500/10 p-2">
+                    <div className="icon-badge-indigo">
                       <UserPlus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     Información del Usuario
@@ -271,10 +251,5 @@ export default function NewUserPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </main>
-      </div>
-      <Footer />
-    </div>
   );
 }
