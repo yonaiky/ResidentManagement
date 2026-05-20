@@ -45,9 +45,8 @@ export async function PATCH(
 
   const ticketAuth = await requireTicketAuth();
   if (ticketAuth instanceof NextResponse) return ticketAuth;
-  const { user } = ticketAuth;
 
-  const asTechnician = isTechnician(user.role);
+  const asTechnician = isTechnician(ticketAuth.ctx.membershipRole);
 
   if (!asTechnician) {
     const managerAuth = await requireAuth("manager");
@@ -69,7 +68,7 @@ export async function PATCH(
       if (adminAuth instanceof NextResponse) return adminAuth;
     }
 
-    const existing = await findTicketWithAccess(ticketId, user);
+    const existing = await findTicketWithAccess(ticketId, ticketAuth);
     if (!existing) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
@@ -116,7 +115,7 @@ export async function PATCH(
           ticketId,
           fromStatus: existing.status,
           toStatus: status,
-          changedById: user.userId,
+          changedById: ticketAuth.userId,
           note: note?.trim() || null,
         },
       });

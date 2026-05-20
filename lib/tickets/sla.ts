@@ -2,23 +2,25 @@ import { prisma } from "@/lib/prisma";
 import { CLOSED_STATUSES, DEFAULT_SLA_HOURS } from "./constants";
 
 export async function getResolutionHours(
+  tenantId: string,
   category: string,
   priority: string
 ): Promise<number> {
   const rule = await prisma.maintenanceSlaRule.findUnique({
     where: {
-      category_priority: { category, priority },
+      tenantId_category_priority: { tenantId, category, priority },
     },
   });
   return rule?.resolutionHours ?? DEFAULT_SLA_HOURS;
 }
 
 export async function computeSlaDueAt(
+  tenantId: string,
   category: string,
   priority: string,
   createdAt: Date
 ): Promise<Date> {
-  const hours = await getResolutionHours(category, priority);
+  const hours = await getResolutionHours(tenantId, category, priority);
   return new Date(createdAt.getTime() + hours * 60 * 60 * 1000);
 }
 

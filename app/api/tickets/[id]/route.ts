@@ -17,7 +17,6 @@ export async function GET(
 ) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
 
   const ticketId = parseId(params.id);
   if (ticketId == null) {
@@ -25,7 +24,7 @@ export async function GET(
   }
 
   try {
-    const accessCheck = await findTicketWithAccess(ticketId, user);
+    const accessCheck = await findTicketWithAccess(ticketId, auth);
     if (!accessCheck) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
@@ -64,7 +63,7 @@ export async function PATCH(
 ) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  if (isTechnician(auth.user.role)) {
+  if (isTechnician(auth.ctx.membershipRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -74,7 +73,7 @@ export async function PATCH(
   }
 
   try {
-    const existing = await findTicketWithAccess(ticketId, auth.user);
+    const existing = await findTicketWithAccess(ticketId, auth);
     if (!existing) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
@@ -83,7 +82,9 @@ export async function PATCH(
     const { title, description, category, priority, location, residentId } = body;
 
     if (residentId != null) {
-      const resident = await prisma.resident.findUnique({ where: { id: residentId } });
+      const resident = await prisma.resident.findFirst({
+        where: { id: residentId, tenantId: auth.ctx.tenantId },
+      });
       if (!resident) {
         return NextResponse.json({ error: "Resident not found" }, { status: 404 });
       }
@@ -93,7 +94,12 @@ export async function PATCH(
     const nextPriority = priority ?? existing.priority;
     const slaDueAt =
       category || priority
-        ? await computeSlaDueAt(nextCategory, nextPriority, existing.createdAt)
+        ? await computeSlaDueAt(
+            auth.ctx.tenantId,
+            nextCategory,
+            nextPriority,
+            existing.createdAt
+          )
         : existing.slaDueAt;
 
     const slaBreached = isSlaBreached(slaDueAt, existing.status);

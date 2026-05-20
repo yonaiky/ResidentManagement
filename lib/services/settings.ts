@@ -38,9 +38,11 @@ export interface InvoiceConfigData {
 
 export const settingsService = {
   // Company Info
-  async getCompanyInfo() {
+  async getCompanyInfo(tenantId: string) {
     try {
-      const companyInfo = await prisma.companyInfo.findFirst();
+      const companyInfo = await prisma.companyInfo.findFirst({
+        where: { tenantId },
+      });
       return companyInfo;
     } catch (error) {
       console.error('Error getting company info:', error);
@@ -48,9 +50,11 @@ export const settingsService = {
     }
   },
 
-  async updateCompanyInfo(data: CompanyInfoData) {
+  async updateCompanyInfo(tenantId: string, data: CompanyInfoData) {
     try {
-      const existing = await prisma.companyInfo.findFirst();
+      const existing = await prisma.companyInfo.findFirst({
+        where: { tenantId },
+      });
       
       if (existing) {
         return prisma.companyInfo.update({
@@ -59,7 +63,7 @@ export const settingsService = {
         });
       }
 
-      return prisma.companyInfo.create({ data });
+      return prisma.companyInfo.create({ data: { ...data, tenantId } });
     } catch (error) {
       console.error('Error updating company info:', error);
       throw error;
@@ -67,9 +71,11 @@ export const settingsService = {
   },
 
   // Fiscal Config
-  async getFiscalConfig() {
+  async getFiscalConfig(tenantId: string) {
     try {
-      const fiscalConfig = await prisma.fiscalConfig.findFirst();
+      const fiscalConfig = await prisma.fiscalConfig.findFirst({
+        where: { tenantId },
+      });
       return fiscalConfig;
     } catch (error) {
       console.error('Error getting fiscal config:', error);
@@ -77,9 +83,11 @@ export const settingsService = {
     }
   },
 
-  async updateFiscalConfig(data: FiscalConfigData) {
+  async updateFiscalConfig(tenantId: string, data: FiscalConfigData) {
     try {
-      const existing = await prisma.fiscalConfig.findFirst();
+      const existing = await prisma.fiscalConfig.findFirst({
+        where: { tenantId },
+      });
       
       // Ensure all required fields are present with default values
       const fiscalData = {
@@ -110,7 +118,7 @@ export const settingsService = {
       }
 
       return prisma.fiscalConfig.create({
-        data: fiscalData
+        data: { ...fiscalData, tenantId }
       });
     } catch (error) {
       console.error('Error updating fiscal config:', error);
@@ -119,9 +127,11 @@ export const settingsService = {
   },
 
   // Invoice Config
-  async getInvoiceConfig() {
+  async getInvoiceConfig(tenantId: string) {
     try {
-      const invoiceConfig = await prisma.invoiceConfig.findFirst();
+      const invoiceConfig = await prisma.invoiceConfig.findFirst({
+        where: { tenantId },
+      });
       return invoiceConfig;
     } catch (error) {
       console.error('Error getting invoice config:', error);
@@ -129,9 +139,11 @@ export const settingsService = {
     }
   },
 
-  async updateInvoiceConfig(data: InvoiceConfigData) {
+  async updateInvoiceConfig(tenantId: string, data: InvoiceConfigData) {
     try {
-      const existing = await prisma.invoiceConfig.findFirst();
+      const existing = await prisma.invoiceConfig.findFirst({
+        where: { tenantId },
+      });
       
       if (existing) {
         return prisma.invoiceConfig.update({
@@ -140,7 +152,7 @@ export const settingsService = {
         });
       }
 
-      return prisma.invoiceConfig.create({ data });
+      return prisma.invoiceConfig.create({ data: { ...data, tenantId } });
     } catch (error) {
       console.error('Error updating invoice config:', error);
       throw error;

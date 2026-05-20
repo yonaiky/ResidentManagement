@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect, memo } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -189,6 +190,7 @@ function Header({ premium = true, onToggleSidebar }: HeaderProps) {
         </div>
         
         <div className="flex items-center gap-1.5">
+          <TenantSwitcher />
           {premium && (
             <Button size="sm" className="hidden gap-1.5 shadow-lg shadow-primary/20 sm:flex" asChild>
               <Link href="/residents">

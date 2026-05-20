@@ -1,68 +1,57 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, hasPermission, type AuthUser } from "@/lib/auth";
 import { isTechnician } from "@/lib/roles";
+import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import type { AuthTenantUser } from "@/lib/tenant/types";
+import { mergeTenantWhere } from "@/lib/tenant/scope";
 
 export async function requireTicketAuth(): Promise<
-  { user: AuthUser } | NextResponse
+  AuthTenantUser | NextResponse
 > {
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (isTechnician(user.role) || hasPermission(user.role, "user")) {
-    return { user };
-  }
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return requireTenantAuth("user");
 }
 
 export async function requireAuth(
   minRole: "user" | "manager" | "admin" = "user"
-): Promise<{ user: AuthUser } | NextResponse> {
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+): Promise<AuthTenantUser | NextResponse> {
+  if (minRole === "admin") {
+    return requireTenantAuth("tenant_admin");
   }
-  if (isTechnician(user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (minRole === "manager") {
+    return requireTenantManager();
   }
-  if (!hasPermission(user.role, minRole)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  return { user };
+  return requireTicketAuth();
 }
 
 export function mergeTicketListScope(
   where: Record<string, unknown>,
-  user: AuthUser
+  auth: AuthTenantUser
 ): Record<string, unknown> {
-  if (!isTechnician(user.role)) {
-    return where;
+  const scoped = mergeTenantWhere(where, auth.ctx);
+  if (isTechnician(auth.ctx.membershipRole)) {
+    return { ...scoped, assignedToId: auth.userId };
   }
-  return {
-    ...where,
-    assignedToId: user.userId,
-  };
+  return scoped;
 }
 
 export function canAccessTicket(
   ticket: { assignedToId: string | null },
-  user: AuthUser
+  auth: AuthTenantUser
 ): boolean {
-  if (!isTechnician(user.role)) {
+  if (!isTechnician(auth.ctx.membershipRole)) {
     return true;
   }
-  return ticket.assignedToId === user.userId;
+  return ticket.assignedToId === auth.userId;
 }
 
 export async function findTicketWithAccess(
   ticketId: number,
-  user: AuthUser
+  auth: AuthTenantUser
 ) {
-  const ticket = await prisma.maintenanceTicket.findUnique({
-    where: { id: ticketId },
+  const ticket = await prisma.maintenanceTicket.findFirst({
+    where: { id: ticketId, tenantId: auth.ctx.tenantId },
   });
   if (!ticket) return null;
-  if (!canAccessTicket(ticket, user)) return null;
+  if (!canAccessTicket(ticket, auth)) return null;
   return ticket;
 }

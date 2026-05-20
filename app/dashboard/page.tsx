@@ -28,6 +28,7 @@ import { PaymentWidget } from "@/components/dashboard/payment-widget";
 import { RecentResidentsWidget } from "@/components/dashboard/recent-residents-widget";
 import { OccupancyWidget } from "@/components/dashboard/occupancy-widget";
 import { TicketsSummaryWidget } from "@/components/dashboard/tickets-summary-widget";
+import { ParkingSummaryWidget } from "@/components/dashboard/parking-summary-widget";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { DASHBOARD_COLORS } from "@/lib/dashboard/constants";
 import type { DashboardData } from "@/lib/dashboard/types";
@@ -173,6 +174,10 @@ export default function DashboardPage() {
 
         {data.ticketStats && (
           <TicketsSummaryWidget stats={data.ticketStats} />
+        )}
+
+        {data.parkingStats && (
+          <ParkingSummaryWidget stats={data.parkingStats} />
         )}
 
         <motion.div className="grid gap-6 lg:grid-cols-3">

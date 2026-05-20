@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ResidentTokensTable } from "@/components/residents/resident-tokens-table";
+import { ResidentParkingSection } from "@/components/residents/resident-parking-section";
 import { Plus, ArrowLeft, User, Key } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -141,6 +142,8 @@ export default function ResidentTokensPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <ResidentParkingSection residentId={resident.id} />
 
               {/* Tokens Table */}
               <Card className="card-hover">

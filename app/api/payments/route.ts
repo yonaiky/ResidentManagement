@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
+import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import { mergeTenantWhere } from "@/lib/tenant/scope";
 
 // GET all payments
 export async function GET() {
+  const auth = await requireTenantAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const payments = await prisma.payment.findMany({
+      where: mergeTenantWhere({}, auth.ctx),
       include: {
         resident: {
           select: {
@@ -45,6 +51,9 @@ export async function GET() {
 
 // POST new payment
 export async function POST(request: Request) {
+  const auth = await requireTenantManager();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const { amount, residentId, paymentDate, month, year } = body;
@@ -56,8 +65,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const resident = await prisma.resident.findFirst({
+      where: { id: parseInt(residentId), tenantId: auth.ctx.tenantId },
+    });
+    if (!resident) {
+      return NextResponse.json({ error: 'Resident not found' }, { status: 404 });
+    }
+
     const payment = await prisma.payment.create({
       data: {
+        tenantId: auth.ctx.tenantId,
         amount: parseFloat(amount),
         residentId: parseInt(residentId),
         paymentDate: new Date(paymentDate),

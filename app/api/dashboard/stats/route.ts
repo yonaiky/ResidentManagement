@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireTenantAuth } from "@/lib/tenant/auth";
+import { mergeTenantWhere } from "@/lib/tenant/scope";
 import { MONTH_LABELS, DAY_LABELS, DASHBOARD_COLORS } from "@/lib/dashboard/constants";
+import { aggregateAvailabilityCounts } from "@/lib/parking/availability";
+import {
+  loadActiveAssignments,
+  loadActiveVisitsForAvailability,
+  loadAllSpots,
+} from "@/lib/parking/queries";
 
 function percentChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
@@ -12,7 +20,11 @@ function startOfMonth(year: number, month: number) {
 }
 
 export async function GET() {
+  const auth = await requireTenantAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
+    const tenantWhere = mergeTenantWhere({}, auth.ctx);
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
@@ -21,6 +33,7 @@ export async function GET() {
 
     const residentsWithPendingPayments = await prisma.resident.findMany({
       where: {
+        ...tenantWhere,
         OR: [
           {
             payments: {
@@ -46,22 +59,25 @@ export async function GET() {
       return total + 700;
     }, 0);
 
-    const totalResidents = await prisma.resident.count();
+    const totalResidents = await prisma.resident.count({ where: tenantWhere });
     const residentsAtMonthStart = await prisma.resident.count({
-      where: { createdAt: { lt: startOfMonth(currentYear, currentMonth) } },
+      where: { ...tenantWhere, createdAt: { lt: startOfMonth(currentYear, currentMonth) } },
     });
     const newResidentsThisMonth = totalResidents - residentsAtMonthStart;
 
     const residentsAtPrevMonthStart = await prisma.resident.count({
-      where: { createdAt: { lt: startOfMonth(previousYear, previousMonth) } },
+      where: { ...tenantWhere, createdAt: { lt: startOfMonth(previousYear, previousMonth) } },
     });
     const newResidentsPrevMonth =
       residentsAtMonthStart - residentsAtPrevMonthStart;
     const residentsTrend = percentChange(newResidentsThisMonth, newResidentsPrevMonth);
 
-    const activeTokens = await prisma.token.count({ where: { status: "active" } });
+    const activeTokens = await prisma.token.count({
+      where: { ...tenantWhere, status: "active" },
+    });
     const tokensAtMonthStart = await prisma.token.count({
       where: {
+        ...tenantWhere,
         status: "active",
         createdAt: { lt: startOfMonth(currentYear, currentMonth) },
       },
@@ -70,6 +86,7 @@ export async function GET() {
 
     const tokensAtPrevMonthStart = await prisma.token.count({
       where: {
+        ...tenantWhere,
         status: "active",
         createdAt: { lt: startOfMonth(previousYear, previousMonth) },
       },
@@ -78,10 +95,10 @@ export async function GET() {
     const tokensTrend = percentChange(newTokensThisMonth, newTokensPrevMonth);
 
     const currentMonthPayments = await prisma.payment.findMany({
-      where: { month: currentMonth, year: currentYear, status: "completed" },
+      where: { ...tenantWhere, month: currentMonth, year: currentYear, status: "completed" },
     });
     const previousMonthPayments = await prisma.payment.findMany({
-      where: { month: previousMonth, year: previousYear, status: "completed" },
+      where: { ...tenantWhere, month: previousMonth, year: previousYear, status: "completed" },
     });
 
     const currentMonthTotal = currentMonthPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -89,12 +106,17 @@ export async function GET() {
     const percentageChange = percentChange(currentMonthTotal, previousMonthTotal);
 
     const prevMonthPending = await prisma.payment.count({
-      where: { month: previousMonth, year: previousYear, status: { in: ["pending", "overdue"] } },
+      where: {
+        ...tenantWhere,
+        month: previousMonth,
+        year: previousYear,
+        status: { in: ["pending", "overdue"] },
+      },
     });
     const pendingPercentageChange = percentChange(pendingPaymentsCount, prevMonthPending);
 
     const paidResidents = await prisma.resident.count({
-      where: { paymentStatus: { in: ["paid", "completed"] } },
+      where: { ...tenantWhere, paymentStatus: { in: ["paid", "completed"] } },
     });
     const occupancyRate =
       totalResidents === 0 ? 0 : Math.round((paidResidents / totalResidents) * 100);
@@ -107,7 +129,7 @@ export async function GET() {
 
     const recentActivities = await prisma.payment.findMany({
       take: 8,
-      where: { status: "completed" },
+      where: { ...tenantWhere, status: "completed" },
       include: {
         resident: {
           select: { name: true, lastName: true, noRegistro: true },
@@ -140,7 +162,7 @@ export async function GET() {
     }));
 
     const yearPayments = await prisma.payment.findMany({
-      where: { year: currentYear },
+      where: { ...tenantWhere, year: currentYear },
       select: { month: true, amount: true, status: true },
     });
 
@@ -165,6 +187,7 @@ export async function GET() {
 
     const weekPayments = await prisma.payment.findMany({
       where: {
+        ...tenantWhere,
         paymentDate: { gte: weekStart },
         status: "completed",
       },
@@ -191,9 +214,9 @@ export async function GET() {
     });
 
     const [completedCount, pendingCount, overdueCount] = await Promise.all([
-      prisma.payment.count({ where: { status: "completed" } }),
-      prisma.payment.count({ where: { status: "pending" } }),
-      prisma.payment.count({ where: { status: "overdue" } }),
+      prisma.payment.count({ where: { ...tenantWhere, status: "completed" } }),
+      prisma.payment.count({ where: { ...tenantWhere, status: "pending" } }),
+      prisma.payment.count({ where: { ...tenantWhere, status: "overdue" } }),
     ]);
 
     const paymentStatus = [
@@ -203,6 +226,7 @@ export async function GET() {
     ].filter((s) => s.value > 0);
 
     const recentResidents = await prisma.resident.findMany({
+      where: tenantWhere,
       take: 5,
       orderBy: { createdAt: "desc" },
       select: {
@@ -237,19 +261,19 @@ export async function GET() {
           const end = startOfMonth(year, month === 12 ? 1 : month + 1);
           if (type === "residents") {
             const count = await prisma.resident.count({
-              where: { createdAt: { lt: end } },
+              where: { ...tenantWhere, createdAt: { lt: end } },
             });
             return { value: count };
           }
           if (type === "tokens") {
             const count = await prisma.token.count({
-              where: { status: "active", createdAt: { lt: end } },
+              where: { ...tenantWhere, status: "active", createdAt: { lt: end } },
             });
             return { value: count };
           }
           if (type === "revenue") {
             const payments = await prisma.payment.findMany({
-              where: { month, year, status: "completed" },
+              where: { ...tenantWhere, month, year, status: "completed" },
               select: { amount: true },
             });
             return {
@@ -258,6 +282,7 @@ export async function GET() {
           }
           const count = await prisma.payment.count({
             where: {
+              ...tenantWhere,
               month,
               year,
               status: { in: ["pending", "overdue"] },
@@ -276,25 +301,43 @@ export async function GET() {
     ]);
 
     const openStatuses = ["open", "assigned", "in_progress", "waiting"];
+    const [spots, parkingAssignments, parkingVisits, pendingFinesCount] =
+      await Promise.all([
+        loadAllSpots(auth.ctx.tenantId, auth.ctx.propertyId),
+        loadActiveAssignments(auth.ctx.tenantId),
+        loadActiveVisitsForAvailability(auth.ctx.tenantId),
+        prisma.parkingFine.count({
+          where: { status: "pending", tenantId: auth.ctx.tenantId },
+        }),
+      ]);
+
+    const parkingSpotCounts = aggregateAvailabilityCounts(
+      spots,
+      parkingAssignments.map((a) => ({ spotId: a.spotId, endDate: a.endDate })),
+      parkingVisits
+    );
+
     const [openCount, unassignedCount, slaBreachedCount, inProgressCount] =
       await Promise.all([
         prisma.maintenanceTicket.count({
-          where: { status: { in: openStatuses } },
+          where: { ...tenantWhere, status: { in: openStatuses } },
         }),
         prisma.maintenanceTicket.count({
           where: {
+            ...tenantWhere,
             status: { in: openStatuses },
             assignedToId: null,
           },
         }),
         prisma.maintenanceTicket.count({
           where: {
+            ...tenantWhere,
             slaBreached: true,
             status: { notIn: ["closed", "cancelled", "resolved"] },
           },
         }),
         prisma.maintenanceTicket.count({
-          where: { status: "in_progress" },
+          where: { ...tenantWhere, status: "in_progress" },
         }),
       ]);
 
@@ -336,6 +379,12 @@ export async function GET() {
         unassignedCount,
         slaBreachedCount,
         inProgressCount,
+      },
+      parkingStats: {
+        available: parkingSpotCounts.available,
+        occupied: parkingSpotCounts.occupied,
+        total: parkingSpotCounts.total,
+        pendingFines: pendingFinesCount,
       },
     });
   } catch (error) {

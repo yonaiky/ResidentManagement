@@ -8,6 +8,7 @@ export async function GET() {
 
   try {
     const rules = await prisma.maintenanceSlaRule.findMany({
+      where: { tenantId: auth.ctx.tenantId },
       orderBy: [{ category: "asc" }, { priority: "asc" }],
     });
     return NextResponse.json(rules);

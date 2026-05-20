@@ -10,6 +10,8 @@ import {
   Plus,
   BarChart3,
   Wrench,
+  Car,
+  Building2,
 } from "lucide-react";
 
 export type UserRole = "admin" | "manager" | "user" | string;
@@ -55,6 +57,12 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Resumen y métricas",
       },
       {
+        href: "/properties",
+        label: "Propiedades",
+        icon: Building2,
+        description: "Residenciales y unidades",
+      },
+      {
         href: "/residents",
         label: "Residentes",
         icon: Users,
@@ -83,6 +91,12 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         label: "Mantenimiento",
         icon: Wrench,
         description: "Tickets e incidencias",
+      },
+      {
+        href: "/parking",
+        label: "Parqueos",
+        icon: Car,
+        description: "Vehículos y espacios",
       },
       {
         href: "/whatsapp",

@@ -15,7 +15,6 @@ export async function PATCH(
 ) {
   const auth = await requireAuth("manager");
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
 
   const ticketId = parseId(params.id);
   if (ticketId == null) {
@@ -28,8 +27,8 @@ export async function PATCH(
       note?: string;
     };
 
-    const existing = await prisma.maintenanceTicket.findUnique({
-      where: { id: ticketId },
+    const existing = await prisma.maintenanceTicket.findFirst({
+      where: { id: ticketId, tenantId: auth.ctx.tenantId },
     });
 
     if (!existing) {
@@ -62,7 +61,7 @@ export async function PATCH(
             ticketId,
             fromStatus: existing.status,
             toStatus: nextStatus,
-            changedById: user.userId,
+            changedById: auth.userId,
             note: note?.trim() || "Técnico asignado",
           },
         });

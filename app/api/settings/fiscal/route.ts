@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { settingsService } from '@/lib/services/settings';
-import { getAuthUser, hasPermission } from '@/lib/auth';
+import { requireTenantAuth } from '@/lib/tenant/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  const auth = await requireTenantAuth('tenant_admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
-    const authUser = await getAuthUser();
-    
-    if (!authUser || !hasPermission(authUser.role, 'admin')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const fiscalConfig = await settingsService.getFiscalConfig();
+    const fiscalConfig = await settingsService.getFiscalConfig(auth.ctx.tenantId);
     return NextResponse.json(fiscalConfig);
   } catch (error) {
     console.error('Get fiscal config error:', error);
@@ -25,18 +19,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  try {
-    const authUser = await getAuthUser();
-    
-    if (!authUser || !hasPermission(authUser.role, 'admin')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  const auth = await requireTenantAuth('tenant_admin');
+  if (auth instanceof NextResponse) return auth;
 
+  try {
     const data = await request.json();
-    const fiscalConfig = await settingsService.updateFiscalConfig(data);
+    const fiscalConfig = await settingsService.updateFiscalConfig(
+      auth.ctx.tenantId,
+      data
+    );
     
     return NextResponse.json(fiscalConfig);
   } catch (error) {
@@ -46,4 +37,4 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

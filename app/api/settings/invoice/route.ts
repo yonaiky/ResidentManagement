@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { settingsService } from '@/lib/services/settings';
-import { getAuthUser, hasPermission } from '@/lib/auth';
+import { requireTenantAuth } from '@/lib/tenant/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  const auth = await requireTenantAuth('tenant_admin');
+  if (auth instanceof NextResponse) return auth;
+
   try {
-    const authUser = await getAuthUser();
-    
-    if (!authUser || !hasPermission(authUser.role, 'admin')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const invoiceConfig = await settingsService.getInvoiceConfig();
+    const invoiceConfig = await settingsService.getInvoiceConfig(auth.ctx.tenantId);
     return NextResponse.json(invoiceConfig);
   } catch (error) {
     console.error('Get invoice config error:', error);
@@ -25,18 +19,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  try {
-    const authUser = await getAuthUser();
-    
-    if (!authUser || !hasPermission(authUser.role, 'admin')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  const auth = await requireTenantAuth('tenant_admin');
+  if (auth instanceof NextResponse) return auth;
 
+  try {
     const data = await request.json();
-    const invoiceConfig = await settingsService.updateInvoiceConfig(data);
+    const invoiceConfig = await settingsService.updateInvoiceConfig(
+      auth.ctx.tenantId,
+      data
+    );
     
     return NextResponse.json(invoiceConfig);
   } catch (error) {
@@ -46,4 +37,4 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

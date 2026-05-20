@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireTenantManager } from "@/lib/tenant/auth";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
@@ -38,6 +39,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const auth = await requireTenantManager();
+  if (auth instanceof NextResponse) return auth;
+
   console.log('Iniciando registro de pago...');
   console.log('Params:', params);
   
@@ -86,8 +90,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     // Verificar si el residente existe
     console.log('Buscando residente...');
-    const resident = await prisma.resident.findUnique({
-      where: { id: residentId }
+    const resident = await prisma.resident.findFirst({
+      where: { id: residentId, tenantId: auth.ctx.tenantId },
     });
 
     if (!resident) {
@@ -127,6 +131,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     console.log('Creando pago...');
     const payment = await prisma.payment.create({
       data: {
+        tenantId: auth.ctx.tenantId,
         amount: parseFloat(amount),
         residentId: residentId,
         paymentDate: today,

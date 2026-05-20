@@ -20,7 +20,7 @@ export async function GET(
   }
 
   try {
-    const ticket = await findTicketWithAccess(ticketId, auth.user);
+    const ticket = await findTicketWithAccess(ticketId, auth);
     if (!ticket) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
@@ -53,7 +53,6 @@ export async function POST(
 ) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
 
   const ticketId = parseId(params.id);
   if (ticketId == null) {
@@ -66,7 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "body is required" }, { status: 400 });
     }
 
-    const ticket = await findTicketWithAccess(ticketId, user);
+    const ticket = await findTicketWithAccess(ticketId, auth);
     if (!ticket) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
@@ -74,7 +73,7 @@ export async function POST(
     const comment = await prisma.ticketComment.create({
       data: {
         ticketId,
-        authorId: user.userId,
+        authorId: auth.userId,
         body: body.trim(),
       },
       include: {

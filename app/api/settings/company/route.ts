@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { settingsService } from '@/lib/services/settings';
 import { getAuthUser, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireTenantAuth } from '@/lib/tenant/auth';
+import { mergeTenantWhere } from '@/lib/tenant/scope';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +16,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const companyInfo = await prisma.companyInfo.findFirst();
+    const tenantAuth = await requireTenantAuth('tenant_admin');
+    if (tenantAuth instanceof NextResponse) return tenantAuth;
+
+    const companyInfo = await prisma.companyInfo.findFirst({
+      where: mergeTenantWhere({}, tenantAuth.ctx),
+    });
     return NextResponse.json(companyInfo);
   } catch (error) {
     console.error('Get company info error:', error);
@@ -47,7 +54,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar si ya existe una configuración
-    const existing = await prisma.companyInfo.findFirst();
+    const tenantAuth = await requireTenantAuth('tenant_admin');
+    if (tenantAuth instanceof NextResponse) return tenantAuth;
+
+    const existing = await prisma.companyInfo.findFirst({
+      where: mergeTenantWhere({}, tenantAuth.ctx),
+    });
 
     let companyInfo;
     if (existing) {
@@ -67,6 +79,7 @@ export async function PUT(request: NextRequest) {
       // Crear nueva configuración
       companyInfo = await prisma.companyInfo.create({
         data: {
+          tenantId: tenantAuth.ctx.tenantId,
           name: data.name,
           rnc: data.rnc,
           address: data.address,

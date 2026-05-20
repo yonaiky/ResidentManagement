@@ -22,6 +22,7 @@ import {
   Sun,
   Users,
   Wrench,
+  Car,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuthUserStore } from "@/store/auth-user-store";
@@ -34,6 +35,7 @@ const allPages = [
   { href: "/payments", label: "Pagos", icon: CreditCard },
   { href: "/reports", label: "Reportes", icon: BarChart3 },
   { href: "/tickets", label: "Mantenimiento", icon: Wrench },
+  { href: "/parking", label: "Parqueos", icon: Car },
   { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];

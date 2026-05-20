@@ -75,9 +75,17 @@ export type TicketDashboardStats = {
   inProgressCount: number;
 };
 
+export type ParkingDashboardStats = {
+  available: number;
+  occupied: number;
+  total: number;
+  pendingFines: number;
+};
+
 export type DashboardData = {
   stats: DashboardStats;
   ticketStats?: TicketDashboardStats;
+  parkingStats?: ParkingDashboardStats;
   activities: DashboardActivity[];
   pendingResidents: PendingResident[];
   monthlyRevenue: MonthlyRevenuePoint[];

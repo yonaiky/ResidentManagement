@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
 
-export async function generateTicketNumber(createdAt: Date = new Date()): Promise<string> {
+export async function generateTicketNumber(
+  tenantId: string,
+  createdAt: Date = new Date()
+): Promise<string> {
   const year = createdAt.getFullYear();
   const prefix = `TKT-${year}-`;
 
   const last = await prisma.maintenanceTicket.findFirst({
     where: {
+      tenantId,
       ticketNumber: { startsWith: prefix },
     },
     orderBy: { ticketNumber: "desc" },

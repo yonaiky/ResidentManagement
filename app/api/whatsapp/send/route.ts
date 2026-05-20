@@ -135,6 +135,7 @@ export async function POST(request: NextRequest) {
     // Registrar la notificación en la base de datos
     await prisma.notification.create({
       data: {
+        tenantId: resident.tenantId,
         message: `WhatsApp enviado: ${messageType}`,
         type: 'whatsapp',
         residentId: resident.id,

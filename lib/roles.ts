@@ -1,6 +1,18 @@
 /** Roles de la aplicación (Profile.role) */
-export const APP_ROLES = ["admin", "manager", "user", "technician"] as const;
+export const APP_ROLES = [
+  "admin",
+  "manager",
+  "user",
+  "technician",
+  "platform_admin",
+] as const;
 export type AppRole = (typeof APP_ROLES)[number];
+
+export const PLATFORM_ADMIN_PATHS = ["/platform"] as const;
+
+export function isPlatformAdminRole(role: string | undefined): boolean {
+  return role === "platform_admin";
+}
 
 export function isTechnician(role: string | undefined): boolean {
   return role === "technician";
@@ -34,6 +46,8 @@ export function getRoleLabel(role: string): string {
       return "Técnico";
     case "user":
       return "Usuario";
+    case "platform_admin":
+      return "Admin plataforma";
     default:
       return role;
   }

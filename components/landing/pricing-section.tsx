@@ -1,57 +1,13 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LANDING_PLANS } from "@/lib/tenant/plans";
 
-const plans = [
-  {
-    name: "Básico",
-    price: "$20",
-    period: "/mes",
-    description: "Ideal para residenciales pequeños que inician su digitalización.",
-    features: [
-      "1 residencial",
-      "5 usuarios",
-      "100 residentes",
-      "20 tokens/mes",
-      "Reportes básicos",
-    ],
-    cta: "Comenzar",
-    popular: false,
-  },
-  {
-    name: "Profesional",
-    price: "$50",
-    period: "/mes",
-    description: "La opción preferida para comunidades en crecimiento.",
-    features: [
-      "3 residenciales",
-      "15 usuarios",
-      "500 residentes",
-      "200 tokens/mes",
-      "Reportes avanzados",
-      "Auditoría 90 días",
-    ],
-    cta: "Solicitar demo",
-    popular: true,
-  },
-  {
-    name: "Premium",
-    price: "$100",
-    period: "/mes",
-    description: "Control total para operadores con múltiples propiedades.",
-    features: [
-      "Residenciales ilimitados",
-      "Usuarios ilimitados",
-      "Residentes ilimitados",
-      "Tokens ilimitados",
-      "Reportes avanzados",
-      "Auditoría completa",
-      "API e integraciones",
-    ],
-    cta: "Contactar ventas",
-    popular: false,
-  },
-];
+const ctaByPlan: Record<string, string> = {
+  BASIC: "Comenzar",
+  PROFESSIONAL: "Solicitar demo",
+  PREMIUM: "Contactar ventas",
+};
 
 export function PricingSection() {
   return (
@@ -65,9 +21,9 @@ export function PricingSection() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {plans.map((plan) => (
+          {LANDING_PLANS.map((plan) => (
             <div
-              key={plan.name}
+              key={plan.id}
               className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${
                 plan.popular
                   ? "landing-glass border-violet-500/50 shadow-xl shadow-violet-500/20 lg:scale-105"
@@ -102,7 +58,7 @@ export function PricingSection() {
                 }`}
                 variant={plan.popular ? "default" : "outline"}
               >
-                <Link href="/register">{plan.cta}</Link>
+                <Link href="/register">{ctaByPlan[plan.id] ?? "Comenzar"}</Link>
               </Button>
             </div>
           ))}

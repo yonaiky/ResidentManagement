@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
+import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import { mergeTenantWhere } from "@/lib/tenant/scope";
+import { assertWithinLimit } from "@/lib/tenant/limits";
 
 // GET all tokens
 export async function GET() {
+  const auth = await requireTenantAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const tokens = await prisma.token.findMany({
+      where: mergeTenantWhere({}, auth.ctx),
       include: {
         resident: true,
       },
@@ -24,6 +31,9 @@ export async function GET() {
 
 // POST new token
 export async function POST(request: Request) {
+  const auth = await requireTenantManager();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const { name, residentId } = body;
@@ -35,8 +45,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: auth.ctx.tenantId },
+    });
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
+    const limitCheck = await assertWithinLimit(tenant, "tokens_monthly");
+    if (!limitCheck.ok) {
+      return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+    }
+
+    const resident = await prisma.resident.findFirst({
+      where: { id: parseInt(residentId), tenantId: auth.ctx.tenantId },
+    });
+    if (!resident) {
+      return NextResponse.json({ error: 'Resident not found' }, { status: 404 });
+    }
+
     const token = await prisma.token.create({
       data: {
+        tenantId: auth.ctx.tenantId,
         name,
         residentId: parseInt(residentId),
       },

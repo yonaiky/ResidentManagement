@@ -23,13 +23,12 @@ const ticketInclude = {
 export async function GET(request: NextRequest) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
 
   try {
     const filters = parseTicketSearchParams(request.nextUrl.searchParams);
     const where = mergeTicketListScope(
       buildTicketWhereClause(filters),
-      user
+      auth
     );
     const orderBy = buildTicketOrderBy(filters);
     const skip = (filters.page - 1) * filters.pageSize;
@@ -63,10 +62,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  if (isTechnician(auth.user.role)) {
+  if (isTechnician(auth.ctx.membershipRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const { user } = auth;
 
   try {
     const body = (await request.json()) as CreateTicketInput;
@@ -80,20 +78,29 @@ export async function POST(request: NextRequest) {
     }
 
     if (residentId != null) {
-      const resident = await prisma.resident.findUnique({ where: { id: residentId } });
+      const resident = await prisma.resident.findFirst({
+        where: { id: residentId, tenantId: auth.ctx.tenantId },
+      });
       if (!resident) {
         return NextResponse.json({ error: "Resident not found" }, { status: 404 });
       }
     }
 
     const createdAt = new Date();
-    const ticketNumber = await generateTicketNumber(createdAt);
+    const ticketNumber = await generateTicketNumber(auth.ctx.tenantId, createdAt);
     const ticketPriority = priority ?? DEFAULT_PRIORITY;
-    const slaDueAt = await computeSlaDueAt(category, ticketPriority, createdAt);
+    const slaDueAt = await computeSlaDueAt(
+      auth.ctx.tenantId,
+      category,
+      ticketPriority,
+      createdAt
+    );
 
     const ticket = await prisma.$transaction(async (tx) => {
       const created = await tx.maintenanceTicket.create({
         data: {
+          tenantId: auth.ctx.tenantId,
+          propertyId: auth.ctx.propertyId,
           ticketNumber,
           title: title.trim(),
           description: description.trim(),
@@ -102,7 +109,7 @@ export async function POST(request: NextRequest) {
           status: DEFAULT_STATUS,
           location: location?.trim() || null,
           residentId: residentId ?? null,
-          createdById: user.userId,
+          createdById: auth.userId,
           slaDueAt,
           slaBreached: false,
         },
@@ -114,7 +121,7 @@ export async function POST(request: NextRequest) {
           ticketId: created.id,
           fromStatus: null,
           toStatus: DEFAULT_STATUS,
-          changedById: user.userId,
+          changedById: auth.userId,
           note: "Ticket creado",
         },
       });
