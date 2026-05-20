@@ -68,8 +68,16 @@ export type SparklinePoint = {
   value: number;
 };
 
+export type TicketDashboardStats = {
+  openCount: number;
+  unassignedCount: number;
+  slaBreachedCount: number;
+  inProgressCount: number;
+};
+
 export type DashboardData = {
   stats: DashboardStats;
+  ticketStats?: TicketDashboardStats;
   activities: DashboardActivity[];
   pendingResidents: PendingResident[];
   monthlyRevenue: MonthlyRevenuePoint[];

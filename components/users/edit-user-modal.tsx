@@ -35,7 +35,7 @@ import { Loader2, Edit } from "lucide-react";
 const formSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
   email: z.string().email("Por favor ingrese un email válido"),
-  role: z.enum(["user", "manager", "admin"]),
+  role: z.enum(["user", "manager", "admin", "technician"]),
   isActive: z.boolean(),
 });
 
@@ -76,7 +76,7 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
       form.reset({
         username: user.username,
         email: user.email,
-        role: user.role as "user" | "manager" | "admin",
+        role: user.role as "user" | "manager" | "admin" | "technician",
         isActive: user.isActive,
       });
     }
@@ -182,6 +182,7 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
                     <SelectContent>
                       <SelectItem value="user">Usuario</SelectItem>
                       <SelectItem value="manager">Gerente</SelectItem>
+                      <SelectItem value="technician">Técnico</SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>

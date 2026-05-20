@@ -183,8 +183,25 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
         return 'destructive';
       case 'manager':
         return 'default';
+      case 'technician':
+        return 'outline';
       default:
         return 'secondary';
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrador';
+      case 'manager':
+        return 'Gerente';
+      case 'technician':
+        return 'Técnico';
+      case 'user':
+        return 'Usuario';
+      default:
+        return role;
     }
   };
 
@@ -236,7 +253,7 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>
                       <Shield className="mr-1 h-3 w-3" />
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      {getRoleLabel(user.role)}
                     </Badge>
                   </TableCell>
                   <TableCell>

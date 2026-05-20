@@ -8,6 +8,8 @@ export interface AuthUser {
   role: string;
 }
 
+import { isTechnician } from "@/lib/roles";
+
 const roleHierarchy = {
   admin: 3,
   manager: 2,
@@ -15,6 +17,9 @@ const roleHierarchy = {
 } as const;
 
 export function hasPermission(userRole: string, requiredRole: string): boolean {
+  if (isTechnician(userRole)) {
+    return false;
+  }
   const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0;
   const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
   return userLevel >= requiredLevel;

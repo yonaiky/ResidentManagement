@@ -27,6 +27,7 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { PaymentWidget } from "@/components/dashboard/payment-widget";
 import { RecentResidentsWidget } from "@/components/dashboard/recent-residents-widget";
 import { OccupancyWidget } from "@/components/dashboard/occupancy-widget";
+import { TicketsSummaryWidget } from "@/components/dashboard/tickets-summary-widget";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { DASHBOARD_COLORS } from "@/lib/dashboard/constants";
 import type { DashboardData } from "@/lib/dashboard/types";
@@ -169,6 +170,10 @@ export default function DashboardPage() {
             index={3}
           />
         </div>
+
+        {data.ticketStats && (
+          <TicketsSummaryWidget stats={data.ticketStats} />
+        )}
 
         <motion.div className="grid gap-6 lg:grid-cols-3">
           <AnalyticsCard

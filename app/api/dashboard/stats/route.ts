@@ -275,6 +275,29 @@ export async function GET() {
       buildSparkline("pending"),
     ]);
 
+    const openStatuses = ["open", "assigned", "in_progress", "waiting"];
+    const [openCount, unassignedCount, slaBreachedCount, inProgressCount] =
+      await Promise.all([
+        prisma.maintenanceTicket.count({
+          where: { status: { in: openStatuses } },
+        }),
+        prisma.maintenanceTicket.count({
+          where: {
+            status: { in: openStatuses },
+            assignedToId: null,
+          },
+        }),
+        prisma.maintenanceTicket.count({
+          where: {
+            slaBreached: true,
+            status: { notIn: ["closed", "cancelled", "resolved"] },
+          },
+        }),
+        prisma.maintenanceTicket.count({
+          where: { status: "in_progress" },
+        }),
+      ]);
+
     return NextResponse.json({
       stats: {
         totalResidents,
@@ -307,6 +330,12 @@ export async function GET() {
         tokens: tokensSpark,
         revenue: revenueSpark,
         pending: pendingSpark,
+      },
+      ticketStats: {
+        openCount,
+        unassignedCount,
+        slaBreachedCount,
+        inProgressCount,
       },
     });
   } catch (error) {

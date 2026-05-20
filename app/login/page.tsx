@@ -98,8 +98,20 @@ function LoginForm() {
         description: "Has iniciado sesión correctamente.",
       });
 
+      const meRes = await fetch("/api/auth/me");
+      const meData = meRes.ok ? await meRes.json() : null;
+      const role = meData?.user?.role as string | undefined;
       const from = searchParams.get("from");
-      router.push(from && from !== "/" ? from : "/dashboard");
+      const defaultHome = role === "technician" ? "/tickets" : "/dashboard";
+      const technicianAllowed =
+        from === "/tickets" || (from?.startsWith("/tickets/") ?? false);
+      const destination =
+        from && from !== "/"
+          ? role === "technician" && !technicianAllowed
+            ? "/tickets"
+            : from
+          : defaultHome;
+      router.push(destination);
       router.refresh();
     } catch (error) {
       toast({

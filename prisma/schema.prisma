@@ -20,6 +20,10 @@ model Profile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  createdTickets  MaintenanceTicket[] @relation("TicketCreatedBy")
+  assignedTickets MaintenanceTicket[] @relation("TicketAssignedTo")
+  ticketComments  TicketComment[]
+
   @@map("Profile")
 }
 
@@ -37,9 +41,10 @@ model Resident {
   nextPaymentDate DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  tokens          Token[]
-  notifications   Notification[]
-  payments        Payment[]
+  tokens             Token[]
+  notifications      Notification[]
+  payments           Payment[]
+  maintenanceTickets MaintenanceTicket[]
 }
 
 model Token {
@@ -119,4 +124,72 @@ model InvoiceConfig {
   footerNotes         String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+model MaintenanceTicket {
+  id            Int       @id @default(autoincrement())
+  ticketNumber  String    @unique
+  title         String
+  description   String
+  category      String
+  priority      String    @default("medium")
+  status        String    @default("open")
+  location      String?
+  residentId    Int?
+  resident      Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  createdById   String    @db.Uuid
+  createdBy     Profile   @relation("TicketCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedToId  String?   @db.Uuid
+  assignedTo    Profile?  @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  slaDueAt      DateTime?
+  slaBreached   Boolean   @default(false)
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  comments      TicketComment[]
+  statusHistory TicketStatusHistory[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([assignedToId])
+  @@index([createdAt])
+}
+
+model TicketComment {
+  id        Int               @id @default(autoincrement())
+  ticketId  Int
+  ticket    MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String            @db.Uuid
+  author    Profile           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  body      String
+  createdAt DateTime          @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketStatusHistory {
+  id          Int               @id @default(autoincrement())
+  ticketId    Int
+  ticket      MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromStatus  String?
+  toStatus    String
+  changedById String            @db.Uuid
+  note        String?
+  createdAt   DateTime          @default(now())
+
+  @@index([ticketId])
+}
+
+model MaintenanceSlaRule {
+  id              Int      @id @default(autoincrement())
+  category        String
+  priority        String
+  resolutionHours Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([category, priority])
 }

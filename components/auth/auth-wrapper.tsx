@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { TechnicianRouteGuard } from "@/components/auth/technician-route-guard";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -25,5 +26,9 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     return <>{children}</>;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <TechnicianRouteGuard>
+      <AppShell>{children}</AppShell>
+    </TechnicianRouteGuard>
+  );
 }

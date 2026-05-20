@@ -9,6 +9,7 @@ import {
   Settings,
   Plus,
   BarChart3,
+  Wrench,
 } from "lucide-react";
 
 export type UserRole = "admin" | "manager" | "user" | string;
@@ -78,6 +79,12 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Análisis y exportación",
       },
       {
+        href: "/tickets",
+        label: "Mantenimiento",
+        icon: Wrench,
+        description: "Tickets e incidencias",
+      },
+      {
         href: "/whatsapp",
         label: "WhatsApp",
         icon: MessageCircle,
@@ -112,6 +119,23 @@ export function filterNavGroupsForRole(
   groups: SidebarNavGroup[],
   role: UserRole | undefined
 ): SidebarNavGroup[] {
+  if (role === "technician") {
+    return [
+      {
+        id: "technician",
+        label: "Mi trabajo",
+        items: [
+          {
+            href: "/tickets",
+            label: "Mis asignaciones",
+            icon: Wrench,
+            description: "Tickets asignados a ti",
+          },
+        ],
+      },
+    ];
+  }
+
   const isAdmin = role === "admin";
   const isManagerOrAdmin = isAdmin || role === "manager";
 

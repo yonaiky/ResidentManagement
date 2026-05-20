@@ -35,7 +35,7 @@ const formSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
   email: z.string().email("Por favor ingrese un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  role: z.enum(["user", "manager", "admin"]),
+  role: z.enum(["user", "manager", "admin", "technician"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -175,6 +175,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                     <SelectContent>
                       <SelectItem value="user">Usuario</SelectItem>
                       <SelectItem value="manager">Gerente</SelectItem>
+                      <SelectItem value="technician">Técnico</SelectItem>
                       <SelectItem value="admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>

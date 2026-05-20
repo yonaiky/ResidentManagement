@@ -21,15 +21,19 @@ import {
   Settings,
   Sun,
   Users,
+  Wrench,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useAuthUserStore } from "@/store/auth-user-store";
+import { isTechnician } from "@/lib/roles";
 
-const pages = [
+const allPages = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/residents", label: "Residentes", icon: Users },
   { href: "/tokens", label: "Tokens", icon: Key },
   { href: "/payments", label: "Pagos", icon: CreditCard },
   { href: "/reports", label: "Reportes", icon: BarChart3 },
+  { href: "/tickets", label: "Mantenimiento", icon: Wrench },
   { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];
@@ -38,6 +42,11 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  const user = useAuthUserStore((s) => s.user);
+
+  const pages = isTechnician(user?.role)
+    ? allPages.filter((p) => p.href === "/tickets")
+    : allPages;
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
