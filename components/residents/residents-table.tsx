@@ -53,7 +53,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { EnhancedPaymentForm } from "@/components/payments/enhanced-payment-form";
+import { PaymentModal } from "@/components/payments/payment-modal";
 import { PaymentsList } from "@/components/payments/PaymentsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditResidentModal } from "@/components/residents/edit-resident-modal";
@@ -423,24 +423,15 @@ export function ResidentsTable() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogTitle>
-            Gestión de Pagos - {selectedResident?.name} {selectedResident?.lastName}
-          </DialogTitle>
-          {selectedResident && (
-            <EnhancedPaymentForm
-              resident={selectedResident}
-              onSuccess={() => {
-                invalidateCache("residents-list");
-                void refresh();
-                setShowPaymentDialog(false);
-              }}
-              onClose={() => setShowPaymentDialog(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PaymentModal
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        resident={selectedResident}
+        onSuccess={() => {
+          invalidateCache("residents-list");
+          void refresh();
+        }}
+      />
 
       <AlertDialog open={!!residentToDelete} onOpenChange={() => setResidentToDelete(null)}>
         <AlertDialogContent>

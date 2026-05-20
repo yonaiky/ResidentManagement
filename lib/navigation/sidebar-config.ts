@@ -8,6 +8,7 @@ import {
   UserCog,
   Settings,
   Plus,
+  BarChart3,
 } from "lucide-react";
 
 export type UserRole = "admin" | "manager" | "user" | string;
@@ -69,6 +70,12 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         label: "Pagos",
         icon: CreditCard,
         description: "Transacciones",
+      },
+      {
+        href: "/reports",
+        label: "Reportes",
+        icon: BarChart3,
+        description: "Análisis y exportación",
       },
       {
         href: "/whatsapp",

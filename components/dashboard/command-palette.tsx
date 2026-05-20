@@ -12,6 +12,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import {
+  BarChart3,
   CreditCard,
   Home,
   Key,
@@ -28,6 +29,7 @@ const pages = [
   { href: "/residents", label: "Residentes", icon: Users },
   { href: "/tokens", label: "Tokens", icon: Key },
   { href: "/payments", label: "Pagos", icon: CreditCard },
+  { href: "/reports", label: "Reportes", icon: BarChart3 },
   { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];
