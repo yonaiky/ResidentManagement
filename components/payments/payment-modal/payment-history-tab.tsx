@@ -17,13 +17,13 @@ function PaymentHistoryTabComponent({ history }: PaymentHistoryTabProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 py-16 text-center"
+        className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 py-16 text-center"
       >
-        <FileText className="h-12 w-12 text-slate-600" />
-        <p className="mt-4 text-sm font-medium text-slate-400">
+        <FileText className="h-12 w-12 text-muted-foreground/50" />
+        <p className="mt-4 text-sm font-medium text-muted-foreground">
           Sin historial de pagos
         </p>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-xs text-muted-foreground/80">
           Los pagos procesados aparecerán aquí
         </p>
       </motion.div>
@@ -45,22 +45,22 @@ function PaymentHistoryTabComponent({ history }: PaymentHistoryTabProps) {
           className="flex items-center justify-between rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold capitalize text-slate-100">
+              <p className="text-sm font-semibold capitalize text-foreground">
                 {format(new Date(period.year, period.month - 1), "MMMM yyyy", {
                   locale: es,
                 })}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Pagado · vence{" "}
                 {format(period.dueDate, "dd MMM yyyy", { locale: es })}
               </p>
             </div>
           </div>
-          <p className="font-[family-name:var(--font-jakarta)] text-lg font-bold tabular-nums text-emerald-300">
+          <p className="font-[family-name:var(--font-jakarta)] text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
             ${period.amount.toLocaleString("es-DO", { minimumFractionDigits: 2 })}
           </p>
         </motion.div>

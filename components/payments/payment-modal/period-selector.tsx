@@ -34,14 +34,14 @@ function PeriodSelectorComponent({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-300">
             <Calendar className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-100">
+            <h3 className="text-sm font-semibold text-foreground">
               Períodos a facturar
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {periods.length} disponible{periods.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -54,7 +54,7 @@ function PeriodSelectorComponent({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-semibold text-blue-300 ring-1 ring-blue-500/25"
+                className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/25"
               >
                 {selectedCount} seleccionado{selectedCount !== 1 ? "s" : ""}
               </motion.span>
@@ -65,7 +65,7 @@ function PeriodSelectorComponent({
             variant="ghost"
             size="sm"
             onClick={onSelectAll}
-            className="h-8 text-xs text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
+            className="h-8 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <CheckCheck className="mr-1 h-3.5 w-3.5" />
             Todos
@@ -76,7 +76,7 @@ function PeriodSelectorComponent({
               variant="ghost"
               size="sm"
               onClick={onClear}
-              className="h-8 text-xs text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
+              className="h-8 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="mr-1 h-3.5 w-3.5" />
               Limpiar
@@ -88,15 +88,15 @@ function PeriodSelectorComponent({
       {periods.length === 0 ? (
         <div
           className={cn(
-            "rounded-2xl border border-dashed border-white/10 py-12 text-center",
-            "bg-white/[0.02]"
+            "rounded-2xl border border-dashed border-border py-12 text-center",
+            "bg-muted/30"
           )}
         >
-          <Calendar className="mx-auto h-10 w-10 text-slate-600" />
-          <p className="mt-3 text-sm font-medium text-slate-400">
+          <Calendar className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 text-sm font-medium text-muted-foreground">
             No hay períodos pendientes
           </p>
-          <p className="mt-1 text-xs text-slate-600">
+          <p className="mt-1 text-xs text-muted-foreground/80">
             Todos los períodos están al día
           </p>
         </div>

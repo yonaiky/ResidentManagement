@@ -18,14 +18,14 @@ type PeriodCardProps = {
 function StatusBadge({ period }: { period: BillingPeriod }) {
   if (period.status === "overdue") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300 ring-1 ring-red-500/25">
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700 ring-1 ring-red-500/25 dark:text-red-300">
         <AlertTriangle className="h-3 w-3" />
         Vencido · {period.daysOverdue}d
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-500/25">
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 ring-1 ring-amber-500/25 dark:text-amber-300">
       <Clock className="h-3 w-3" />
       {period.daysRemaining}d restantes
     </span>
@@ -54,17 +54,17 @@ function PeriodCardComponent({
       onClick={onToggle}
       className={cn(
         "group relative w-full rounded-2xl border p-4 text-left outline-none transition-shadow",
-        "focus-visible:ring-2 focus-visible:ring-blue-500/50",
+        "focus-visible:ring-2 focus-visible:ring-ring",
         selected
-          ? "border-blue-500/50 bg-gradient-to-br from-blue-500/15 via-[#2563EB]/10 to-purple-500/10 shadow-lg shadow-blue-500/15"
-          : "border-white/[0.08] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04] hover:shadow-md hover:shadow-black/20"
+          ? "border-primary/50 bg-primary/5 shadow-md shadow-primary/10"
+          : "border-border bg-card hover:border-primary/30 hover:bg-muted/50"
       )}
       aria-pressed={selected}
     >
       {selected && (
         <motion.span
           layoutId="period-selected-glow"
-          className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-blue-400/40"
+          className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-primary/40"
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
         />
       )}
@@ -75,8 +75,8 @@ function PeriodCardComponent({
             className={cn(
               "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition-colors",
               selected
-                ? "border-blue-400/50 bg-blue-500 text-white"
-                : "border-white/15 bg-white/[0.04] text-transparent group-hover:border-white/25"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-muted text-transparent group-hover:border-muted-foreground/40"
             )}
             animate={selected ? { scale: [1, 1.15, 1] } : {}}
           >
@@ -84,10 +84,10 @@ function PeriodCardComponent({
           </motion.div>
 
           <div>
-            <p className="text-sm font-semibold capitalize text-slate-100">
+            <p className="text-sm font-semibold capitalize text-foreground">
               {label}
             </p>
-            <p className="mt-1 text-xs text-slate-500">Vence {dueLabel}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Vence {dueLabel}</p>
             <div className="mt-2">
               <StatusBadge period={period} />
             </div>
@@ -95,10 +95,10 @@ function PeriodCardComponent({
         </div>
 
         <div className="text-right">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Monto
           </p>
-          <p className="mt-0.5 font-[family-name:var(--font-jakarta)] text-xl font-bold tabular-nums text-slate-100">
+          <p className="mt-0.5 font-[family-name:var(--font-jakarta)] text-xl font-bold tabular-nums text-foreground">
             ${period.amount.toLocaleString("es-DO", { minimumFractionDigits: 2 })}
           </p>
         </div>

@@ -26,15 +26,18 @@ const statusConfig: Record<
 > = {
   current: {
     label: "Al día",
-    className: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30",
+    className:
+      "bg-emerald-500/15 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300",
   },
   pending: {
     label: "Pendiente",
-    className: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
+    className:
+      "bg-amber-500/15 text-amber-700 ring-amber-500/30 dark:text-amber-300",
   },
   overdue: {
     label: "Moroso",
-    className: "bg-red-500/15 text-red-300 ring-red-500/30",
+    className:
+      "bg-red-500/15 text-red-700 ring-red-500/30 dark:text-red-300",
   },
 };
 
@@ -55,20 +58,20 @@ function InfoField({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-slate-400">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
         <p
           className={cn(
-            "mt-0.5 truncate text-sm font-medium text-slate-100",
+            "mt-0.5 truncate text-sm font-medium text-foreground",
             mono && "font-mono"
           )}
         >
-          {value}
+          {value || "—"}
         </p>
       </div>
     </div>
@@ -83,23 +86,20 @@ function ResidentInfoCardComponent({ resident, status }: ResidentInfoCardProps) 
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.05 }}
-      className={cn(
-        "rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5",
-        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-      )}
+      className="rounded-2xl border border-border bg-muted/40 p-5"
     >
       <div className="mb-5 flex items-center gap-4">
         <motion.div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563EB]/30 to-[#7C3AED]/30 text-lg font-semibold text-white ring-1 ring-white/10"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-violet-600/20 text-lg font-semibold text-foreground ring-1 ring-border"
           whileHover={{ scale: 1.02 }}
         >
           {getInitials(resident.name, resident.lastName)}
         </motion.div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold text-slate-100">
+          <p className="truncate text-base font-semibold text-foreground">
             {resident.name} {resident.lastName}
           </p>
-          <p className="text-sm text-slate-500">Cliente residencial</p>
+          <p className="text-sm text-muted-foreground">Cliente residencial</p>
         </div>
         <span
           className={cn(
@@ -116,11 +116,7 @@ function ResidentInfoCardComponent({ resident, status }: ResidentInfoCardProps) 
         <InfoField icon={IdCard} label="Cédula / RNC" value={resident.cedula} mono />
         <InfoField icon={Hash} label="No. registro" value={resident.noRegistro} mono />
         <InfoField icon={Phone} label="Teléfono" value={resident.phone} />
-        <InfoField
-          icon={MapPin}
-          label="Dirección"
-          value={resident.address}
-        />
+        <InfoField icon={MapPin} label="Dirección" value={resident.address} />
       </div>
     </motion.div>
   );

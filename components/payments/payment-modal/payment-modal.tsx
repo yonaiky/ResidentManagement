@@ -74,13 +74,11 @@ export function PaymentModalContent({
       transition={{ type: "spring", stiffness: 400, damping: 32 }}
       className={cn(
         "relative flex max-h-[min(92vh,900px)] flex-col overflow-hidden rounded-2xl",
-        "border border-white/[0.1] bg-[#0f172a]/95 shadow-2xl shadow-black/50 backdrop-blur-2xl",
-        "dark:bg-[#0f172a]/98"
+        "border border-border bg-card text-card-foreground shadow-2xl"
       )}
     >
-      <div className="pointer-events-none absolute -right-24 -top-24 h-48 w-48 rounded-full bg-[#2563EB]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-[#7C3AED]/15 blur-3xl" />
-      <div className="sidebar-noise pointer-events-none absolute inset-0 opacity-30" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-500/15" />
 
       <PaymentModalHeader
         residentName={`${resident.name} ${resident.lastName}`}
@@ -131,7 +129,7 @@ export function PaymentModalContent({
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   role="alert"
-                  className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                  className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                 >
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   {form.error}
@@ -146,7 +144,7 @@ export function PaymentModalContent({
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <p className="mb-4 text-sm text-slate-500">
+              <p className="mb-4 text-sm text-muted-foreground">
                 Historial de períodos pagados
               </p>
               <PaymentHistoryTab history={form.paymentHistory} />

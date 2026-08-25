@@ -19,7 +19,7 @@ const tabs: { id: PaymentModalTab; label: string; icon: typeof Receipt }[] = [
 function SegmentedTabsComponent({ value, onChange }: SegmentedTabsProps) {
   return (
     <div
-      className="relative flex rounded-xl border border-white/[0.08] bg-white/[0.04] p-1"
+      className="relative flex rounded-xl border border-border bg-muted/50 p-1"
       role="tablist"
     >
       {tabs.map((tab) => {
@@ -34,13 +34,15 @@ function SegmentedTabsComponent({ value, onChange }: SegmentedTabsProps) {
             onClick={() => onChange(tab.id)}
             className={cn(
               "relative z-10 flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active ? "text-white" : "text-slate-400 hover:text-slate-200"
+              active
+                ? "text-white"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {active && (
               <motion.span
                 layoutId="payment-modal-tab"
-                className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#2563EB] to-[#7C3AED] shadow-lg shadow-blue-500/20"
+                className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-blue-500/20"
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
               />
             )}
