@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { prisma } from '@/lib/prisma';
 
 const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
-const onboardingRoutes = ['/onboarding'];
-const platformRoutes = ['/platform'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -44,44 +41,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const isOnboardingRoute = onboardingRoutes.some(
-    (r) => pathname === r || pathname.startsWith(`${r}/`)
-  );
-  const isPlatformRoute = platformRoutes.some(
-    (r) => pathname === r || pathname.startsWith(`${r}/`)
-  );
-
-  if (user.email) {
-    const profile = await prisma.profile.findFirst({
-      where: { email: user.email },
-      select: { id: true, role: true },
-    });
-
-    if (profile) {
-      if (isPlatformRoute && profile.role !== 'platform_admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-
-      if (profile.role !== 'platform_admin' && !isOnboardingRoute && !isPlatformRoute) {
-        const memberships = await prisma.tenantMembership.count({
-          where: { profileId: profile.id, status: 'active' },
-        });
-        if (memberships === 0) {
-          return NextResponse.redirect(new URL('/onboarding', request.url));
-        }
-      }
-
-      if (isOnboardingRoute && profile.role !== 'platform_admin') {
-        const memberships = await prisma.tenantMembership.count({
-          where: { profileId: profile.id, status: 'active' },
-        });
-        if (memberships > 0) {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-      }
-    }
-  }
-
+  // Role / membership checks live in Node (API + route guards).
+  // Prisma cannot run in Edge middleware.
   return response;
 }
 

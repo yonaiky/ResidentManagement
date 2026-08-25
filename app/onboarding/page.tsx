@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { useAuthUserStore } from "@/store/auth-user-store";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const resetAuthUser = useAuthUserStore((s) => s.reset);
   const [loading, setLoading] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
   const [propertyName, setPropertyName] = useState("");
@@ -33,6 +35,7 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
       toast({ title: "Organización creada" });
+      resetAuthUser();
       router.push("/dashboard");
     } catch (err) {
       toast({

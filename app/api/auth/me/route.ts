@@ -26,7 +26,15 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found or inactive' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: profile });
+    const activeMemberships = await prisma.tenantMembership.count({
+      where: { profileId: profile.id, status: 'active' },
+    });
+
+    return NextResponse.json({
+      user: profile,
+      hasActiveMembership: activeMemberships > 0,
+    });
+
   } catch (error) {
     console.error('Get user error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
