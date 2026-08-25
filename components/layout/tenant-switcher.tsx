@@ -18,19 +18,38 @@ export function TenantSwitcher() {
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [tenantId, setTenantId] = useState<string>("");
   const [propertyId, setPropertyId] = useState<string>("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    fetch("/api/tenant/context")
-      .then((r) => r.json())
-      .then((data) => {
-        const list = data.tenants ?? [];
-        setTenants(list);
-        if (list.length === 1) setTenantId(list[0].id);
-      })
-      .catch(() => {});
+    let cancelled = false;
+
+    (async () => {
+      await fetch("/api/tenant/context/ensure", { method: "POST" }).catch(
+        () => null
+      );
+      if (cancelled) return;
+
+      const r = await fetch("/api/tenant/context");
+      const data = await r.json().catch(() => ({}));
+      if (cancelled) return;
+
+      const list = data.tenants ?? [];
+      setTenants(list);
+      if (list.length >= 1) {
+        setTenantId(list[0].id);
+      }
+      setReady(true);
+    })().catch(() => {
+      if (!cancelled) setReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     const activeTenant = tenantId || tenants[0]?.id;
     if (!activeTenant) {
       setProperties([]);
@@ -48,7 +67,7 @@ export function TenantSwitcher() {
         );
       })
       .catch(() => setProperties([]));
-  }, [tenantId, tenants]);
+  }, [tenantId, tenants, ready]);
 
   async function saveContext(tId: string, pId: string | null) {
     await fetch("/api/tenant/context", {
@@ -111,4 +130,3 @@ export function TenantSwitcher() {
     </div>
   );
 }
-

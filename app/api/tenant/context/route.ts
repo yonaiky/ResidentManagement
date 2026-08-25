@@ -76,21 +76,22 @@ export async function POST(request: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(TENANT_COOKIE, tenantId, {
+  const cookieOpts = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
-  });
+    secure: process.env.NODE_ENV === "production",
+  };
+  res.cookies.set(TENANT_COOKIE, tenantId, cookieOpts);
   if (propertyId) {
-    res.cookies.set(PROPERTY_COOKIE, propertyId, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-    });
+    res.cookies.set(PROPERTY_COOKIE, propertyId, cookieOpts);
   } else {
-    res.cookies.set(PROPERTY_COOKIE, "", { path: "/", maxAge: 0 });
+    res.cookies.set(PROPERTY_COOKIE, "", {
+      path: "/",
+      maxAge: 0,
+      secure: process.env.NODE_ENV === "production",
+    });
   }
   return res;
 }

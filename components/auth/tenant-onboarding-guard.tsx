@@ -26,7 +26,14 @@ export function TenantOnboardingGuard({ children }: Props) {
 
   useEffect(() => {
     hydrateFromCache();
-    void fetchUser({ force: true });
+    void (async () => {
+      await fetchUser({ force: true });
+      if (useAuthUserStore.getState().hasActiveMembership) {
+        await fetch("/api/tenant/context/ensure", { method: "POST" }).catch(
+          () => null
+        );
+      }
+    })();
   }, [hydrateFromCache, fetchUser]);
 
   useEffect(() => {

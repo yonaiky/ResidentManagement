@@ -30,10 +30,14 @@ async function resolveMembership(
   tenantId: string | null
 ) {
   if (tenantId) {
-    return prisma.tenantMembership.findUnique({
+    const byCookie = await prisma.tenantMembership.findUnique({
       where: { tenantId_profileId: { tenantId, profileId } },
       include: { tenant: true },
     });
+    if (byCookie && byCookie.status === "active") {
+      return byCookie;
+    }
+    // Stale/wrong cookie: fall back to first active membership
   }
   return prisma.tenantMembership.findFirst({
     where: { profileId, status: "active" },
@@ -47,7 +51,15 @@ export async function getTenantContext(
   preferredTenantId?: string | null
 ): Promise<TenantContext | null> {
   if (isPlatformAdmin(user.role)) {
-    const cookieTenant = preferredTenantId ?? (await getCookieTenantId());
+    let cookieTenant = preferredTenantId ?? (await getCookieTenantId());
+    if (!cookieTenant) {
+      const first = await prisma.tenant.findFirst({
+        where: { status: { in: ["TRIAL", "ACTIVE"] } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      cookieTenant = first?.id ?? null;
+    }
     if (!cookieTenant) return null;
     return {
       tenantId: cookieTenant,

@@ -98,11 +98,20 @@ function LoginForm() {
         description: "Has iniciado sesión correctamente.",
       });
 
+      await fetch("/api/tenant/context/ensure", { method: "POST" }).catch(
+        () => null
+      );
+
       const meRes = await fetch("/api/auth/me");
       const meData = meRes.ok ? await meRes.json() : null;
       const role = meData?.user?.role as string | undefined;
       const from = searchParams.get("from");
-      const defaultHome = role === "technician" ? "/tickets" : "/dashboard";
+      const defaultHome =
+        meData?.hasActiveMembership === false && role !== "platform_admin"
+          ? "/onboarding"
+          : role === "technician"
+            ? "/tickets"
+            : "/dashboard";
       const technicianAllowed =
         from === "/tickets" || (from?.startsWith("/tickets/") ?? false);
       const destination =
