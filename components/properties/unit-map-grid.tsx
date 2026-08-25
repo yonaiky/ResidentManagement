@@ -15,12 +15,27 @@ const statusColors: Record<string, string> = {
 type Props = {
   items: UnitMapItem[];
   onSelect: (unit: UnitMapItem) => void;
+  onAddClick?: () => void;
 };
 
-export function UnitMapGrid({ items, onSelect }: Props) {
+export function UnitMapGrid({ items, onSelect, onAddClick }: Props) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">Sin unidades. Agrega unidades en la pestaña Unidades.</p>
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-muted-foreground">
+          Sin unidades todavía. Una unidad es un apartamento, villa o local del
+          residencial.
+        </p>
+        {onAddClick && (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Agregar la primera unidad
+          </button>
+        )}
+      </div>
     );
   }
 
