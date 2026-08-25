@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -32,13 +32,26 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, UserPlus } from "lucide-react";
 
 const formSchema = z.object({
-  username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
+  username: z
+    .string()
+    .min(3, "El usuario debe tener al menos 3 caracteres")
+    .regex(
+      /^[a-zA-Z0-9._-]+$/,
+      "Solo letras, números, punto, guion o guion bajo (sin espacios)"
+    ),
   email: z.string().email("Por favor ingrese un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   role: z.enum(["user", "manager", "tenant_admin", "technician"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+const emptyValues: FormData = {
+  username: "",
+  email: "",
+  password: "",
+  role: "user",
+};
 
 interface AddUserModalProps {
   open: boolean;
@@ -52,13 +65,14 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-      email: "",
-      password: "",
-      role: "user",
-    },
+    defaultValues: emptyValues,
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset(emptyValues);
+    }
+  }, [open, form]);
 
   async function onSubmit(data: FormData) {
     try {
@@ -66,10 +80,14 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
       const response = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          username: data.username.trim(),
+          email: data.email.trim().toLowerCase(),
+        }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.error || "Failed to create user");
@@ -80,13 +98,14 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
         description: `El usuario ${result.username} ha sido creado exitosamente`,
       });
 
-      form.reset();
+      form.reset(emptyValues);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Error al crear el usuario",
+        description:
+          error instanceof Error ? error.message : "Error al crear el usuario",
         variant: "destructive",
       });
     } finally {
@@ -94,11 +113,11 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
     }
   }
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset();
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      form.reset(emptyValues);
     }
-    onOpenChange(open);
+    onOpenChange(next);
   };
 
   return (
@@ -117,7 +136,31 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+            autoComplete="off"
+          >
+            {/* Honeypot fields to discourage browser autofill */}
+            <input
+              type="text"
+              name="prevent_autofill_user"
+              autoComplete="username"
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+              readOnly
+            />
+            <input
+              type="password"
+              name="prevent_autofill_pass"
+              autoComplete="current-password"
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+              readOnly
+            />
+
             <FormField
               control={form.control}
               name="username"
@@ -125,7 +168,14 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                 <FormItem>
                   <FormLabel>Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ingresa el nombre de usuario" {...field} />
+                    <Input
+                      placeholder="ej. jeiliani.mateo"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -139,7 +189,12 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Ingresa la dirección de email" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="Ingresa la dirección de email"
+                      autoComplete="off"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -153,7 +208,12 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Ingresa la contraseña" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="Ingresa la contraseña"
+                      autoComplete="new-password"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -166,7 +226,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rol en la organización</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un rol" />
