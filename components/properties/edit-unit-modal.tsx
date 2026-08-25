@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,22 +19,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { UNIT_TYPES, UNIT_STATUSES } from "@/lib/tenant/constants";
+import type { UnitDetail } from "@/lib/tenant/types";
 
 type StructureOption = { id: string; name: string };
 
 type Props = {
-  propertyId: string;
-  structures?: StructureOption[];
+  unit: UnitDetail | null;
+  structures: StructureOption[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 };
 
-export function AddUnitModal({
-  propertyId,
-  structures = [],
+export function EditUnitModal({
+  unit,
+  structures,
   open,
   onOpenChange,
   onSuccess,
@@ -47,36 +48,29 @@ export function AddUnitModal({
   const [bedrooms, setBedrooms] = useState("");
   const [areaSqm, setAreaSqm] = useState("");
   const [status, setStatus] = useState("available");
-  const [structureId, setStructureId] = useState("__none__");
+  const [structureId, setStructureId] = useState<string>("__none__");
 
-  function reset() {
-    setCode("");
-    setUnitType("apartment");
-    setFloor("");
-    setBedrooms("");
-    setAreaSqm("");
-    setStatus("available");
-    setStructureId("__none__");
-  }
+  useEffect(() => {
+    if (!unit) return;
+    setCode(unit.code);
+    setUnitType(unit.unitType);
+    setFloor(unit.floor != null ? String(unit.floor) : "");
+    setBedrooms(unit.bedrooms != null ? String(unit.bedrooms) : "");
+    setAreaSqm(unit.areaSqm != null ? String(unit.areaSqm) : "");
+    setStatus(unit.status);
+    setStructureId(unit.structureId ?? "__none__");
+  }, [unit]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!code.trim()) {
-      toast({
-        title: "Código requerido",
-        description: "Ej. A-101, PH-1, LOCAL-3",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!unit) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/properties/${propertyId}/units`, {
-        method: "POST",
+      const res = await fetch(`/api/units/${unit.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: code.trim(),
+          code,
           unitType,
           floor: floor === "" ? null : floor,
           bedrooms: bedrooms === "" ? null : bedrooms,
@@ -86,20 +80,14 @@ export function AddUnitModal({
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "No se pudo crear la unidad");
-      }
-      toast({
-        title: "Unidad creada",
-        description: `Se agregó la unidad ${String(data.code ?? code).toUpperCase()}`,
-      });
-      reset();
+      if (!res.ok) throw new Error(data.error || "Error al actualizar");
+      toast({ title: "Unidad actualizada" });
       onSuccess();
       onOpenChange(false);
     } catch (err) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Error al crear",
+        description: err instanceof Error ? err.message : "Error",
         variant: "destructive",
       });
     } finally {
@@ -108,37 +96,17 @@ export function AddUnitModal({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!v) reset();
-        onOpenChange(v);
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Nueva unidad
-          </DialogTitle>
-          <DialogDescription>
-            Una unidad es un apartamento, villa, local u otro espacio dentro del
-            residencial (ej. A-101, Torre 2 Piso 5).
-          </DialogDescription>
+          <DialogTitle>Editar unidad</DialogTitle>
+          <DialogDescription>Actualiza datos y estado de la unidad</DialogDescription>
         </DialogHeader>
-
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <Label htmlFor="unit-code">Código *</Label>
-            <Input
-              id="unit-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="A-101"
-              required
-            />
+            <Label>Código</Label>
+            <Input value={code} onChange={(e) => setCode(e.target.value)} required />
           </div>
-
           <div>
             <Label>Tipo</Label>
             <Select value={unitType} onValueChange={setUnitType}>
@@ -154,61 +122,49 @@ export function AddUnitModal({
               </SelectContent>
             </Select>
           </div>
-
-          {structures.length > 0 && (
-            <div>
-              <Label>Estructura (opcional)</Label>
-              <Select value={structureId} onValueChange={setStructureId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin estructura</SelectItem>
-                  {structures.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
+          <div>
+            <Label>Estructura (torre / bloque)</Label>
+            <Select value={structureId} onValueChange={setStructureId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sin estructura" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sin estructura</SelectItem>
+                {structures.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="unit-floor">Piso</Label>
+              <Label>Piso</Label>
               <Input
-                id="unit-floor"
                 type="number"
                 value={floor}
                 onChange={(e) => setFloor(e.target.value)}
-                placeholder="1"
               />
             </div>
             <div>
-              <Label htmlFor="unit-bedrooms">Habitaciones</Label>
+              <Label>Habitaciones</Label>
               <Input
-                id="unit-bedrooms"
                 type="number"
                 value={bedrooms}
                 onChange={(e) => setBedrooms(e.target.value)}
-                placeholder="3"
               />
             </div>
           </div>
-
           <div>
-            <Label htmlFor="unit-area">Área (m²)</Label>
+            <Label>Área (m²)</Label>
             <Input
-              id="unit-area"
               type="number"
               step="0.01"
               value={areaSqm}
               onChange={(e) => setAreaSqm(e.target.value)}
-              placeholder="85"
             />
           </div>
-
           <div>
             <Label>Estado</Label>
             <Select value={status} onValueChange={setStatus}>
@@ -224,8 +180,7 @@ export function AddUnitModal({
               </SelectContent>
             </Select>
           </div>
-
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
@@ -238,10 +193,10 @@ export function AddUnitModal({
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creando...
+                  Guardando...
                 </>
               ) : (
-                "Crear unidad"
+                "Guardar"
               )}
             </Button>
           </div>
