@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { 
   Table, 
   TableBody, 
@@ -45,6 +44,14 @@ import {
 import { AddUserModal } from "@/components/users/add-user-modal";
 import { EditUserModal } from "@/components/users/edit-user-modal";
 
+function canManageTenantUsers(role: string | undefined): boolean {
+  return (
+    role === "admin" ||
+    role === "tenant_admin" ||
+    role === "platform_admin"
+  );
+}
+
 type User = {
   id: string;
   username: string;
@@ -56,10 +63,16 @@ type User = {
 
 interface UsersTableProps {
   currentUser: User | null;
+  /** Effective role for permissions (membership or profile) */
+  effectiveRole?: string | null;
   onAddClick?: () => void;
 }
 
-export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
+export function UsersTable({
+  currentUser,
+  effectiveRole,
+  onAddClick,
+}: UsersTableProps) {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,6 +81,8 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+
+  const manageRole = effectiveRole ?? currentUser?.role;
 
   useEffect(() => {
     fetchUsers();
@@ -93,7 +108,7 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
   }
 
   const handleToggleStatus = async (user: User) => {
-    if (!currentUser || currentUser.role !== 'admin') {
+    if (!currentUser || !canManageTenantUsers(manageRole)) {
       toast({
         title: "Error",
         description: "No tienes permisos para realizar esta acción",
@@ -143,7 +158,7 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
   };
 
   const confirmDelete = async () => {
-    if (!userToDelete || !currentUser || currentUser.role !== 'admin') return;
+    if (!userToDelete || !currentUser || !canManageTenantUsers(manageRole)) return;
 
     try {
       const response = await fetch(`/api/users/${userToDelete.id}`, {
@@ -179,27 +194,29 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'manager':
-        return 'default';
-      case 'technician':
-        return 'outline';
+      case "admin":
+      case "tenant_admin":
+        return "destructive";
+      case "manager":
+        return "default";
+      case "technician":
+        return "outline";
       default:
-        return 'secondary';
+        return "secondary";
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'manager':
-        return 'Gerente';
-      case 'technician':
-        return 'Técnico';
-      case 'user':
-        return 'Usuario';
+      case "admin":
+      case "tenant_admin":
+        return "Administrador";
+      case "manager":
+        return "Gerente";
+      case "technician":
+        return "Técnico";
+      case "user":
+        return "Usuario";
       default:
         return role;
     }
@@ -281,7 +298,7 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {currentUser?.role === 'admin' && (
+                        {canManageTenantUsers(manageRole) && (
                           <>
                             <DropdownMenuItem
                               onClick={() => handleEdit(user)}
@@ -290,7 +307,7 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleToggleStatus(user)}
-                              disabled={currentUser.id === user.id}
+                              disabled={currentUser?.id === user.id}
                             >
                               {user.isActive ? (
                                 <>
@@ -306,13 +323,13 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
                             <DropdownMenuItem
                               onClick={() => handleDelete(user)}
                               className="text-red-600"
-                              disabled={currentUser.id === user.id}
+                              disabled={currentUser?.id === user.id}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                              <Trash2 className="mr-2 h-4 w-4" /> Quitar de la org
                             </DropdownMenuItem>
                           </>
                         )}
-                        {currentUser?.role !== 'admin' && (
+                        {!canManageTenantUsers(manageRole) && (
                           <DropdownMenuItem disabled>
                             <Edit className="mr-2 h-4 w-4" /> Sin permisos
                           </DropdownMenuItem>
@@ -332,8 +349,9 @@ export function UsersTable({ currentUser, onAddClick }: UsersTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
-              {userToDelete && ` ${userToDelete.username}`} y todos sus datos asociados.
+              Se quitará al usuario
+              {userToDelete && ` ${userToDelete.username}`} de esta organización.
+              Si no pertenece a otra, también se eliminará su cuenta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

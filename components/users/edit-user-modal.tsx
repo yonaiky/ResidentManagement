@@ -35,7 +35,7 @@ import { Loader2, Edit } from "lucide-react";
 const formSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
   email: z.string().email("Por favor ingrese un email válido"),
-  role: z.enum(["user", "manager", "admin", "technician"]),
+  role: z.enum(["user", "manager", "tenant_admin", "technician"]),
   isActive: z.boolean(),
 });
 
@@ -57,7 +57,28 @@ interface EditUserModalProps {
   currentUserId?: string;
 }
 
-export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUserId }: EditUserModalProps) {
+function normalizeRole(
+  role: string
+): "user" | "manager" | "tenant_admin" | "technician" {
+  if (role === "admin") return "tenant_admin";
+  if (
+    role === "user" ||
+    role === "manager" ||
+    role === "tenant_admin" ||
+    role === "technician"
+  ) {
+    return role;
+  }
+  return "user";
+}
+
+export function EditUserModal({
+  user,
+  open,
+  onOpenChange,
+  onSuccess,
+  currentUserId,
+}: EditUserModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -76,7 +97,7 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
       form.reset({
         username: user.username,
         email: user.email,
-        role: user.role as "user" | "manager" | "admin" | "technician",
+        role: normalizeRole(user.role),
         isActive: user.isActive,
       });
     }
@@ -108,7 +129,8 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Error al actualizar el usuario",
+        description:
+          error instanceof Error ? error.message : "Error al actualizar el usuario",
         variant: "destructive",
       });
     } finally {
@@ -129,7 +151,7 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
             Editar Usuario
           </DialogTitle>
           <DialogDescription>
-            Modifica la información del usuario seleccionado
+            Modifica el rol y estado en esta organización
           </DialogDescription>
         </DialogHeader>
 
@@ -168,9 +190,9 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rol</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
+                  <FormLabel>Rol en la organización</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
                     value={field.value}
                     disabled={isCurrentUser}
                   >
@@ -183,11 +205,13 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
                       <SelectItem value="user">Usuario</SelectItem>
                       <SelectItem value="manager">Gerente</SelectItem>
                       <SelectItem value="technician">Técnico</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="tenant_admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                   {isCurrentUser && (
-                    <p className="text-xs text-muted-foreground">No puedes cambiar tu propio rol</p>
+                    <p className="text-xs text-muted-foreground">
+                      No puedes cambiar tu propio rol
+                    </p>
                   )}
                   <FormMessage />
                 </FormItem>
@@ -200,9 +224,11 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">Estado de la cuenta</FormLabel>
+                    <FormLabel className="text-base">Estado en la organización</FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      {field.value ? "El usuario puede acceder al sistema" : "El usuario no puede acceder al sistema"}
+                      {field.value
+                        ? "El usuario puede acceder a esta organización"
+                        : "El usuario no puede acceder a esta organización"}
                     </p>
                   </div>
                   <FormControl>
@@ -232,7 +258,7 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess, currentUser
                     Actualizando...
                   </>
                 ) : (
-                  'Actualizar Usuario'
+                  "Actualizar Usuario"
                 )}
               </Button>
             </div>

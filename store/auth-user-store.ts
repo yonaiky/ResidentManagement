@@ -12,6 +12,7 @@ export type AuthUser = {
 type AuthGateCache = {
   user: AuthUser;
   hasActiveMembership: boolean;
+  membershipRole: string | null;
 };
 
 const AUTH_GATE_KEY = "rm-auth-gate";
@@ -43,6 +44,7 @@ function writeGateCache(cache: AuthGateCache | null) {
 interface AuthUserState {
   user: AuthUser | null;
   hasActiveMembership: boolean;
+  membershipRole: string | null;
   isLoading: boolean;
   isFetched: boolean;
   hydrateFromCache: () => void;
@@ -55,6 +57,7 @@ let fetchPromise: Promise<void> | null = null;
 export const useAuthUserStore = create<AuthUserState>((set, get) => ({
   user: null,
   hasActiveMembership: false,
+  membershipRole: null,
   isLoading: false,
   isFetched: false,
   hydrateFromCache: () => {
@@ -64,6 +67,7 @@ export const useAuthUserStore = create<AuthUserState>((set, get) => ({
     set({
       user: cached.user,
       hasActiveMembership: cached.hasActiveMembership,
+      membershipRole: cached.membershipRole ?? null,
       isFetched: true,
     });
   },
@@ -73,6 +77,7 @@ export const useAuthUserStore = create<AuthUserState>((set, get) => ({
     set({
       user: null,
       hasActiveMembership: false,
+      membershipRole: null,
       isLoading: false,
       isFetched: false,
     });
@@ -95,20 +100,32 @@ export const useAuthUserStore = create<AuthUserState>((set, get) => ({
           const next = {
             user: data.user as AuthUser,
             hasActiveMembership: Boolean(data.hasActiveMembership),
+            membershipRole: (data.membershipRole as string | null) ?? null,
           };
           writeGateCache(next);
           set({
             user: next.user,
             hasActiveMembership: next.hasActiveMembership,
+            membershipRole: next.membershipRole,
             isFetched: true,
           });
         } else {
           writeGateCache(null);
-          set({ user: null, hasActiveMembership: false, isFetched: true });
+          set({
+            user: null,
+            hasActiveMembership: false,
+            membershipRole: null,
+            isFetched: true,
+          });
         }
       } catch {
         if (!get().user) {
-          set({ user: null, hasActiveMembership: false, isFetched: true });
+          set({
+            user: null,
+            hasActiveMembership: false,
+            membershipRole: null,
+            isFetched: true,
+          });
         } else {
           set({ isFetched: true });
         }

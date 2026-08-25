@@ -15,10 +15,26 @@ import { Plus, UserCog, Users, Shield } from "lucide-react";
 import { AddUserModal } from "@/components/users/add-user-modal";
 import { useAuthUserStore } from "@/store/auth-user-store";
 
+function canManageUsers(role: string | undefined, membershipRole: string | null) {
+  if (role === "platform_admin" || role === "admin" || role === "manager") {
+    return true;
+  }
+  return (
+    membershipRole === "tenant_admin" ||
+    membershipRole === "manager"
+  );
+}
+
+function canCreateUsers(role: string | undefined, membershipRole: string | null) {
+  if (role === "platform_admin" || role === "admin") return true;
+  return membershipRole === "tenant_admin";
+}
+
 export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const currentUser = useAuthUserStore((s) => s.user);
+  const membershipRole = useAuthUserStore((s) => s.membershipRole);
   const fetchUser = useAuthUserStore((s) => s.fetchUser);
   const isLoading = useAuthUserStore((s) => s.isLoading);
 
@@ -26,10 +42,12 @@ export default function UsersPage() {
     void fetchUser();
   }, [fetchUser]);
 
-  const canManageUsers =
-    currentUser?.role === "admin" || currentUser?.role === "manager";
+  const allowed = canManageUsers(currentUser?.role, membershipRole);
+  const canAdd = canCreateUsers(currentUser?.role, membershipRole);
+  const effectiveRole =
+    membershipRole ?? currentUser?.role ?? null;
 
-  if (!isLoading && currentUser && !canManageUsers) {
+  if (!isLoading && currentUser && !allowed) {
     return (
       <div className="text-center py-12">
         <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -51,11 +69,9 @@ export default function UsersPage() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
-            <h1 className="page-title">
-              Gestión de Usuarios
-            </h1>
+            <h1 className="page-title">Gestión de Usuarios</h1>
             <p className="text-lg text-muted-foreground">
-              Administra usuarios del sistema y sus permisos
+              Usuarios de la organización activa
             </p>
           </div>
           <div className="flex gap-3">
@@ -65,7 +81,7 @@ export default function UsersPage() {
                 Ver Dashboard
               </Link>
             </Button>
-            {currentUser?.role === "admin" && (
+            {canAdd && (
               <Button onClick={() => setShowAddModal(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Agregar Usuario
@@ -80,14 +96,18 @@ export default function UsersPage() {
               <div className="icon-badge-indigo">
                 <UserCog className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
-              Todos los Usuarios
+              Usuarios de la organización
             </CardTitle>
             <CardDescription>
-              Lista de todos los usuarios en el sistema con sus roles y estado
+              Solo se muestran miembros del tenant seleccionado
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <UsersTable key={refreshKey} currentUser={currentUser} />
+            <UsersTable
+              key={refreshKey}
+              currentUser={currentUser}
+              effectiveRole={effectiveRole}
+            />
           </CardContent>
         </Card>
       </div>

@@ -39,6 +39,7 @@ export function getDefaultHomeForRole(role: string | undefined): string {
 export function getRoleLabel(role: string): string {
   switch (role) {
     case "admin":
+    case "tenant_admin":
       return "Administrador";
     case "manager":
       return "Gerente";

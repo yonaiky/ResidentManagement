@@ -35,7 +35,7 @@ const formSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
   email: z.string().email("Por favor ingrese un email válido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  role: z.enum(["user", "manager", "admin", "technician"]),
+  role: z.enum(["user", "manager", "tenant_admin", "technician"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -112,7 +112,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
             Nuevo Usuario
           </DialogTitle>
           <DialogDescription>
-            Crea una nueva cuenta de usuario en el sistema
+            Crea un usuario en la organización activa
           </DialogDescription>
         </DialogHeader>
 
@@ -165,7 +165,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rol</FormLabel>
+                  <FormLabel>Rol en la organización</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -176,7 +176,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                       <SelectItem value="user">Usuario</SelectItem>
                       <SelectItem value="manager">Gerente</SelectItem>
                       <SelectItem value="technician">Técnico</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="tenant_admin">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -200,7 +200,7 @@ export function AddUserModal({ open, onOpenChange, onSuccess }: AddUserModalProp
                     Creando...
                   </>
                 ) : (
-                  'Crear Usuario'
+                  "Crear Usuario"
                 )}
               </Button>
             </div>

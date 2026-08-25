@@ -1,73 +1,125 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getAuthUser, hasPermission } from '@/lib/auth';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireTenantAuth } from "@/lib/tenant/auth";
+import {
+  isValidTenantRole,
+  membershipRoleToProfileRole,
+  profileRoleToMembershipRole,
+} from "@/lib/tenant/roles";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const authUser = await getAuthUser();
+    const auth = await requireTenantAuth("manager");
+    if (auth instanceof NextResponse) return auth;
+
     const userId = params.id;
+    const isSelf = auth.userId === userId;
+    const canAdmin =
+      auth.ctx.isPlatformAdmin || auth.ctx.membershipRole === "tenant_admin";
 
-    if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isSelf && !canAdmin && auth.ctx.membershipRole !== "manager") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const canUpdate =
-      authUser.userId === userId || hasPermission(authUser.role, 'manager');
+    const membership = await prisma.tenantMembership.findUnique({
+      where: {
+        tenantId_profileId: {
+          tenantId: auth.ctx.tenantId,
+          profileId: userId,
+        },
+      },
+    });
 
-    if (!canUpdate) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!membership) {
+      return NextResponse.json(
+        { error: "User is not a member of this organization" },
+        { status: 404 }
+      );
     }
 
-    const { username, email, role, isActive, password } = await request.json();
+    const body = await request.json();
+    const { username, email, role, isActive, password } = body;
 
-    const updateData: {
+    const profileUpdate: {
       username?: string;
       email?: string;
       role?: string;
       isActive?: boolean;
     } = {};
 
-    if (username) updateData.username = username;
+    if (username) profileUpdate.username = username;
 
-    if (hasPermission(authUser.role, 'admin')) {
-      if (role) updateData.role = role;
-      if (typeof isActive === 'boolean') updateData.isActive = isActive;
-      if (email) updateData.email = email;
-    } else if (authUser.userId === userId) {
-      if (email) updateData.email = email;
+    let nextMembershipRole: string | undefined;
+    let nextMembershipStatus: string | undefined;
+
+    if (canAdmin && !isSelf) {
+      if (role) {
+        nextMembershipRole = isValidTenantRole(role)
+          ? role
+          : profileRoleToMembershipRole(role);
+        profileUpdate.role = membershipRoleToProfileRole(nextMembershipRole);
+      }
+      if (typeof isActive === "boolean") {
+        nextMembershipStatus = isActive ? "active" : "inactive";
+        profileUpdate.isActive = isActive;
+      }
+      if (email) profileUpdate.email = email;
+    } else if (isSelf) {
+      if (email) profileUpdate.email = email;
     }
 
     const supabaseAdmin = createAdminClient();
 
-    if (email && hasPermission(authUser.role, 'admin')) {
+    if (email && canAdmin) {
       await supabaseAdmin.auth.admin.updateUserById(userId, { email });
     }
 
-    if (password && password.length >= 6 && hasPermission(authUser.role, 'admin')) {
+    if (password && password.length >= 6 && canAdmin) {
       await supabaseAdmin.auth.admin.updateUserById(userId, { password });
     }
 
-    const profile = await prisma.profile.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
+    const [profile] = await prisma.$transaction([
+      prisma.profile.update({
+        where: { id: userId },
+        data: profileUpdate,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.tenantMembership.update({
+        where: { id: membership.id },
+        data: {
+          ...(nextMembershipRole ? { role: nextMembershipRole } : {}),
+          ...(nextMembershipStatus ? { status: nextMembershipStatus } : {}),
+        },
+      }),
+    ]);
+
+    const updatedMembership = await prisma.tenantMembership.findUniqueOrThrow({
+      where: { id: membership.id },
     });
 
-    return NextResponse.json(profile);
+    return NextResponse.json({
+      id: profile.id,
+      username: profile.username,
+      email: profile.email,
+      role: updatedMembership.role,
+      isActive:
+        updatedMembership.status === "active" && profile.isActive,
+      createdAt: profile.createdAt.toISOString(),
+    });
   } catch (error) {
-    console.error('Update user error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Update user error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -76,31 +128,49 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authUser = await getAuthUser();
+    const auth = await requireTenantAuth("tenant_admin");
+    if (auth instanceof NextResponse) return auth;
+
     const userId = params.id;
 
-    if (!authUser || !hasPermission(authUser.role, 'admin')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (auth.userId === userId) {
+      return NextResponse.json(
+        { error: "Cannot remove your own account from the organization" },
+        { status: 400 }
+      );
     }
 
-    if (authUser.userId === userId) {
-      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
-    }
-
-    const supabaseAdmin = createAdminClient();
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
-    }
-
-    await prisma.profile.delete({ where: { id: userId } }).catch(() => {
-      // Profile may already be removed by cascade
+    const membership = await prisma.tenantMembership.findUnique({
+      where: {
+        tenantId_profileId: {
+          tenantId: auth.ctx.tenantId,
+          profileId: userId,
+        },
+      },
     });
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    if (!membership) {
+      return NextResponse.json(
+        { error: "User is not a member of this organization" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.tenantMembership.delete({ where: { id: membership.id } });
+
+    const remaining = await prisma.tenantMembership.count({
+      where: { profileId: userId },
+    });
+
+    if (remaining === 0) {
+      const supabaseAdmin = createAdminClient();
+      await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {});
+      await prisma.profile.delete({ where: { id: userId } }).catch(() => {});
+    }
+
+    return NextResponse.json({ message: "User removed from organization" });
   } catch (error) {
-    console.error('Delete user error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Delete user error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

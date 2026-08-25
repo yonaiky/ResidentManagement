@@ -12,6 +12,7 @@ import {
   Wrench,
   Car,
   Building2,
+  Briefcase,
 } from "lucide-react";
 
 export type UserRole = "admin" | "manager" | "user" | string;
@@ -112,6 +113,13 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     label: "Administración",
     items: [
       {
+        href: "/owner",
+        label: "Mis organizaciones",
+        icon: Briefcase,
+        description: "Orgs y residenciales",
+        adminOnly: true,
+      },
+      {
         href: "/users",
         label: "Usuarios",
         icon: UserCog,
@@ -150,7 +158,10 @@ export function filterNavGroupsForRole(
     ];
   }
 
-  const isAdmin = role === "admin";
+  const isAdmin =
+    role === "admin" ||
+    role === "platform_admin" ||
+    role === "tenant_admin";
   const isManagerOrAdmin = isAdmin || role === "manager";
 
   return groups

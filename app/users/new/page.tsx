@@ -37,7 +37,7 @@ const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["user", "manager", "admin"]),
+  role: z.enum(["user", "manager", "tenant_admin", "technician"]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -219,7 +219,8 @@ export default function NewUserPage() {
                               <SelectContent>
                                 <SelectItem value="user">Usuario</SelectItem>
                                 <SelectItem value="manager">Gerente</SelectItem>
-                                <SelectItem value="admin">Administrador</SelectItem>
+                                <SelectItem value="technician">Técnico</SelectItem>
+                                <SelectItem value="tenant_admin">Administrador</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />

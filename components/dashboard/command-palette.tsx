@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command";
 import {
   BarChart3,
+  Briefcase,
   CreditCard,
   Home,
   Key,
@@ -30,6 +31,7 @@ import { isTechnician } from "@/lib/roles";
 
 const allPages = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/owner", label: "Mis organizaciones", icon: Briefcase },
   { href: "/residents", label: "Residentes", icon: Users },
   { href: "/tokens", label: "Tokens", icon: Key },
   { href: "/payments", label: "Pagos", icon: CreditCard },
@@ -48,7 +50,16 @@ export function CommandPalette() {
 
   const pages = isTechnician(user?.role)
     ? allPages.filter((p) => p.href === "/tickets")
-    : allPages;
+    : allPages.filter((p) => {
+        if (p.href === "/owner") {
+          return (
+            user?.role === "admin" ||
+            user?.role === "platform_admin" ||
+            user?.role === "tenant_admin"
+          );
+        }
+        return true;
+      });
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
