@@ -66,14 +66,15 @@ function Header({ premium = true, onToggleSidebar }: HeaderProps) {
   const { toast } = useToast();
   const user = useAuthUserStore((s) => s.user);
   const fetchUser = useAuthUserStore((s) => s.fetchUser);
+  const resetAuthUser = useAuthUserStore((s) => s.reset);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { openMobile, toggleCollapsed } = useSidebar();
   const handleToggleSidebar = onToggleSidebar ?? toggleCollapsed;
 
   useEffect(() => {
-    fetchUser();
-    fetchActivities();
+    void fetchUser();
+    void fetchActivities();
   }, [fetchUser]);
 
   const fetchActivities = async () => {
@@ -94,6 +95,7 @@ function Header({ premium = true, onToggleSidebar }: HeaderProps) {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      resetAuthUser();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",

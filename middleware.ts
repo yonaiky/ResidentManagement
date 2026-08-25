@@ -6,15 +6,18 @@ const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-pa
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // APIs authenticate themselves; skip Supabase getUser here (saves a round-trip per request).
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   if (
-    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.includes('_rsc') ||
     pathname === '/favicon.ico' ||
     pathname.startsWith('/auth/callback')
   ) {
-    const { response } = await updateSession(request);
-    return response;
+    return NextResponse.next();
   }
 
   const { response, user } = await updateSession(request);
@@ -41,11 +44,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Role / membership checks live in Node (API + route guards).
-  // Prisma cannot run in Edge middleware.
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
 };

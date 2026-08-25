@@ -16,6 +16,7 @@ export function TenantOnboardingGuard({ children }: Props) {
   const user = useAuthUserStore((s) => s.user);
   const hasActiveMembership = useAuthUserStore((s) => s.hasActiveMembership);
   const isFetched = useAuthUserStore((s) => s.isFetched);
+  const hydrateFromCache = useAuthUserStore((s) => s.hydrateFromCache);
   const fetchUser = useAuthUserStore((s) => s.fetchUser);
 
   const isOnboarding =
@@ -24,8 +25,9 @@ export function TenantOnboardingGuard({ children }: Props) {
     pathname === "/platform" || pathname.startsWith("/platform/");
 
   useEffect(() => {
-    void fetchUser();
-  }, [fetchUser]);
+    hydrateFromCache();
+    void fetchUser({ force: true });
+  }, [hydrateFromCache, fetchUser]);
 
   useEffect(() => {
     if (!isFetched || !user) return;
@@ -37,7 +39,7 @@ export function TenantOnboardingGuard({ children }: Props) {
       return;
     }
 
-    if (isPlatform && user.role !== "platform_admin") {
+    if (isPlatform) {
       router.replace("/dashboard");
       return;
     }
@@ -56,46 +58,18 @@ export function TenantOnboardingGuard({ children }: Props) {
     hasActiveMembership,
     isOnboarding,
     isPlatform,
-    pathname,
     router,
   ]);
 
-  if (!isFetched || !user) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-        Cargando...
-      </div>
-    );
-  }
-
-  if (user.role !== "platform_admin") {
-    if (isPlatform) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-          Redirigiendo...
-        </div>
-      );
+  if (isFetched && user) {
+    if (user.role === "platform_admin" && isOnboarding) {
+      return null;
     }
-    if (!hasActiveMembership && !isOnboarding) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-          Redirigiendo...
-        </div>
-      );
+    if (user.role !== "platform_admin") {
+      if (isPlatform) return null;
+      if (!hasActiveMembership && !isOnboarding) return null;
+      if (hasActiveMembership && isOnboarding) return null;
     }
-    if (hasActiveMembership && isOnboarding) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-          Redirigiendo...
-        </div>
-      );
-    }
-  } else if (isOnboarding) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-        Redirigiendo...
-      </div>
-    );
   }
 
   return <>{children}</>;

@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import type { AuthUser } from "@/store/auth-user-store";
+import { useAuthUserStore, type AuthUser } from "@/store/auth-user-store";
 
 type SidebarFooterProps = {
   user: AuthUser | null;
@@ -39,11 +39,13 @@ function SidebarFooterComponent({
 }: SidebarFooterProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const resetAuthUser = useAuthUserStore((s) => s.reset);
 
   const handleLogout = useCallback(async () => {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      resetAuthUser();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",
@@ -57,7 +59,7 @@ function SidebarFooterComponent({
         variant: "destructive",
       });
     }
-  }, [router, toast]);
+  }, [resetAuthUser, router, toast]);
 
   if (isLoading) {
     return (

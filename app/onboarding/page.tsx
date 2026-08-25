@@ -36,6 +36,7 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error(data.error || "Error");
       toast({ title: "Organización creada" });
       resetAuthUser();
+      await useAuthUserStore.getState().fetchUser({ force: true });
       router.push("/dashboard");
     } catch (err) {
       toast({
