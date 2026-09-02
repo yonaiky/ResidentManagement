@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { isPlatformAdmin } from "@/lib/tenant/auth";
-import { TENANT_COOKIE, PROPERTY_COOKIE } from "@/lib/tenant/constants";
+import {
+  TENANT_COOKIE,
+  PROPERTY_COOKIE,
+  ORGANIZATION_COOKIE,
+} from "@/lib/tenant/constants";
 import { getCookieTenantId } from "@/lib/tenant/context";
 
 /**
- * Ensures rm-tenant-id cookie is set to a valid tenant for the current user.
- * Fixes 403s on dashboard/properties when cookie is missing or stale.
+ * Ensures rm-tenant-id and rm-organization-id cookies are set for the current user.
  */
 export async function POST() {
   const user = await getAuthUser();
@@ -40,29 +43,43 @@ export async function POST() {
         { status: 403 }
       );
     }
-    const res = NextResponse.json({ ok: true, tenantId });
-    res.cookies.set(TENANT_COOKIE, tenantId, {
+
+    const org = await prisma.organization.findFirst({
+      where: { tenantId, status: "ACTIVE" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+
+    const res = NextResponse.json({
+      ok: true,
+      tenantId,
+      organizationId: org?.id ?? null,
+    });
+    const cookieOpts = {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
       secure: process.env.NODE_ENV === "production",
-    });
+    };
+    res.cookies.set(TENANT_COOKIE, tenantId, cookieOpts);
+    if (org) {
+      res.cookies.set(ORGANIZATION_COOKIE, org.id, cookieOpts);
+    }
     return res;
   }
 
-  let membership =
-    currentCookie
-      ? await prisma.tenantMembership.findUnique({
-          where: {
-            tenantId_profileId: {
-              tenantId: currentCookie,
-              profileId: user.userId,
-            },
+  let membership = currentCookie
+    ? await prisma.tenantMembership.findUnique({
+        where: {
+          tenantId_profileId: {
+            tenantId: currentCookie,
+            profileId: user.userId,
           },
-          include: { tenant: true },
-        })
-      : null;
+        },
+        include: { tenant: true },
+      })
+    : null;
 
   if (
     !membership ||
@@ -88,17 +105,37 @@ export async function POST() {
     );
   }
 
+  const orgMembership = await prisma.organizationMembership.findFirst({
+    where: {
+      profileId: user.userId,
+      status: "active",
+      organization: {
+        tenantId: membership.tenantId,
+        status: "ACTIVE",
+      },
+    },
+    include: { organization: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   const res = NextResponse.json({
     ok: true,
     tenantId: membership.tenantId,
+    organizationId: orgMembership?.organizationId ?? null,
   });
-  res.cookies.set(TENANT_COOKIE, membership.tenantId, {
+
+  const cookieOpts = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     secure: process.env.NODE_ENV === "production",
-  });
+  };
+  res.cookies.set(TENANT_COOKIE, membership.tenantId, cookieOpts);
+
+  if (orgMembership) {
+    res.cookies.set(ORGANIZATION_COOKIE, orgMembership.organizationId, cookieOpts);
+  }
 
   if (currentCookie && currentCookie !== membership.tenantId) {
     res.cookies.set(PROPERTY_COOKIE, "", {

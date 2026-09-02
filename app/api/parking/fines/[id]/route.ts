@@ -48,13 +48,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       data.notes = body.notes ? String(body.notes).trim() : null;
     }
 
-    const fine = await prisma.parkingFine.update({
+    const fine = await prisma.parkingFine.findFirst({
+      where: { id, tenantId: auth.ctx.tenantId },
+    });
+    if (!fine) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const updated = await prisma.parkingFine.update({
       where: { id },
       data,
       include: fineInclude,
     });
 
-    return NextResponse.json(serializeFine(fine));
+    return NextResponse.json(serializeFine(updated));
   } catch (error) {
     console.error("PATCH /api/parking/fines/[id] error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireTenantAuth } from "@/lib/tenant/auth";
+import { mergeTenantWhere } from "@/lib/tenant/scope";
 import { DASHBOARD_COLORS, MONTH_LABELS } from "@/lib/dashboard/constants";
+import { moneyToNumber } from "@/lib/finance/money";
 import {
   buildArrearsWhere,
   buildPaymentWhere,
@@ -26,13 +29,16 @@ function monthName(month: number) {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireTenantAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const filters = parseReportsSearchParams(request.nextUrl.searchParams);
     const range = resolveDateRange(filters);
     const skip = (filters.page - 1) * filters.pageSize;
 
     if (filters.reportType === "payments") {
-      const where = buildPaymentWhere(filters, range);
+      const where = mergeTenantWhere(buildPaymentWhere(filters, range), auth.ctx);
       const [total, payments, aggregates] = await Promise.all([
         prisma.payment.count({ where }),
         prisma.payment.findMany({
@@ -66,17 +72,19 @@ export async function GET(request: NextRequest) {
 
       const rows: PaymentReportRow[] = payments.map((p) => ({
         id: p.id,
-        residentId: p.residentId,
-        residentName: `${p.resident.name} ${p.resident.lastName}`,
-        cedula: p.resident.cedula,
-        noRegistro: p.resident.noRegistro ?? "",
-        amount: p.amount,
+        residentId: p.residentId ?? 0,
+        residentName: p.resident
+          ? `${p.resident.name} ${p.resident.lastName}`
+          : "—",
+        cedula: p.resident?.cedula ?? "",
+        noRegistro: p.resident?.noRegistro ?? "",
+        amount: moneyToNumber(p.amount),
         status: p.status,
         paymentDate: p.paymentDate?.toISOString() ?? null,
-        dueDate: p.dueDate.toISOString(),
-        month: p.month,
-        year: p.year,
-        monthName: monthName(p.month),
+        dueDate: p.dueDate?.toISOString() ?? "",
+        month: p.month ?? 0,
+        year: p.year ?? 0,
+        monthName: p.month ? monthName(p.month) : "",
       }));
 
       const summary = buildPaymentSummary(aggregates, total);
@@ -87,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (filters.reportType === "residents") {
-      const where = buildResidentWhere(filters, range);
+      const where = mergeTenantWhere(buildResidentWhere(filters, range), auth.ctx);
       const [total, residents] = await Promise.all([
         prisma.resident.count({ where }),
         prisma.resident.findMany({
@@ -118,11 +126,11 @@ export async function GET(request: NextRequest) {
 
       const rows: ResidentReportRow[] = residents.map((r) => {
         const totalPaid = r.payments
-          .filter((p) => p.status === "completed")
-          .reduce((s, p) => s + p.amount, 0);
+          .filter((p) => p.status === "completed" || p.status === "CONFIRMED")
+          .reduce((s, p) => s + moneyToNumber(p.amount), 0);
         const pendingAmount = r.payments
           .filter((p) => p.status === "pending" || p.status === "overdue")
-          .reduce((s, p) => s + p.amount, 0);
+          .reduce((s, p) => s + moneyToNumber(p.amount), 0);
 
         return {
           id: r.id,
@@ -142,26 +150,31 @@ export async function GET(request: NextRequest) {
 
       const allPayments = await prisma.payment.aggregate({
         where: {
+          tenantId: auth.ctx.tenantId,
           resident: where,
-          status: "completed",
+          status: { in: ["completed", "CONFIRMED"] },
         },
         _sum: { amount: true },
       });
       const pendingPayments = await prisma.payment.aggregate({
         where: {
+          tenantId: auth.ctx.tenantId,
           resident: where,
           status: { in: ["pending", "overdue"] },
         },
         _sum: { amount: true },
       });
 
+      const completedAmt = moneyToNumber(allPayments._sum.amount);
+      const pendingAmt = moneyToNumber(pendingPayments._sum.amount);
+
       const summary: ReportsSummary = {
         totalRecords: total,
-        totalAmount: (allPayments._sum.amount ?? 0) + (pendingPayments._sum.amount ?? 0),
-        completedAmount: allPayments._sum.amount ?? 0,
-        pendingAmount: pendingPayments._sum.amount ?? 0,
+        totalAmount: completedAmt + pendingAmt,
+        completedAmount: completedAmt,
+        pendingAmount: pendingAmt,
         overdueAmount: 0,
-        averageAmount: total > 0 ? (allPayments._sum.amount ?? 0) / total : 0,
+        averageAmount: total > 0 ? completedAmt / total : 0,
         collectionRate:
           total > 0
             ? Math.round(
@@ -172,7 +185,10 @@ export async function GET(request: NextRequest) {
               )
             : 0,
         activeTokens: await prisma.token.count({
-          where: { status: "active", resident: where },
+          where: mergeTenantWhere(
+            { status: "active", resident: where },
+            auth.ctx
+          ),
         }),
       };
 
@@ -188,7 +204,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (filters.reportType === "tokens") {
-      const where = buildTokenWhere(filters, range);
+      const where = mergeTenantWhere(buildTokenWhere(filters, range), auth.ctx);
       const [total, tokens, statusGroups] = await Promise.all([
         prisma.token.count({ where }),
         prisma.token.findMany({
@@ -250,7 +266,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Morosidad
-    const where = buildArrearsWhere(filters);
+    const where = mergeTenantWhere(buildArrearsWhere(filters), auth.ctx);
     const residents = await prisma.resident.findMany({
       where,
       include: {
@@ -264,8 +280,8 @@ export async function GET(request: NextRequest) {
     let arrearsRows: ArrearsReportRow[] = residents.map((r) => {
       const pendingAmount =
         r.payments.length > 0
-          ? r.payments.reduce((s, p) => s + p.amount, 0)
-          : 700;
+          ? r.payments.reduce((s, p) => s + moneyToNumber(p.amount), 0)
+          : 0;
       const overdueCount = r.payments.filter((p) => p.status === "overdue").length;
 
       return {
@@ -275,7 +291,7 @@ export async function GET(request: NextRequest) {
         noRegistro: r.noRegistro ?? "",
         phone: r.phone,
         pendingAmount,
-        oldestDueDate: r.payments[0]?.dueDate.toISOString() ?? r.nextPaymentDate?.toISOString() ?? null,
+        oldestDueDate: r.payments[0]?.dueDate?.toISOString() ?? r.nextPaymentDate?.toISOString() ?? null,
         overdueCount: overdueCount || (r.paymentStatus === "overdue" ? 1 : 0),
         paymentStatus: r.paymentStatus,
       };
@@ -355,16 +371,16 @@ export async function GET(request: NextRequest) {
 }
 
 function buildPaymentSummary(
-  aggregates: { status: string; _sum: { amount: number | null }; _count: { id: number } }[],
+  aggregates: { status: string; _sum: { amount: unknown }; _count: { id: number } }[],
   total: number
 ): ReportsSummary {
-  const completed = aggregates.find((a) => a.status === "completed");
+  const completed = aggregates.find((a) => a.status === "completed" || a.status === "CONFIRMED");
   const pending = aggregates.find((a) => a.status === "pending");
   const overdue = aggregates.find((a) => a.status === "overdue");
 
-  const completedAmount = completed?._sum.amount ?? 0;
-  const pendingAmount = pending?._sum.amount ?? 0;
-  const overdueAmount = overdue?._sum.amount ?? 0;
+  const completedAmount = moneyToNumber(completed?._sum.amount as never);
+  const pendingAmount = moneyToNumber(pending?._sum.amount as never);
+  const overdueAmount = moneyToNumber(overdue?._sum.amount as never);
   const totalAmount = completedAmount + pendingAmount + overdueAmount;
 
   return {
@@ -380,12 +396,12 @@ function buildPaymentSummary(
 }
 
 function buildStatusBreakdown(
-  aggregates: { status: string; _sum: { amount: number | null }; _count: { id: number } }[]
+  aggregates: { status: string; _sum: { amount: unknown }; _count: { id: number } }[]
 ): StatusBreakdownItem[] {
   return aggregates.map((a) => ({
     name: labelPaymentStatus(a.status),
     value: a._count.id,
-    amount: a._sum.amount ?? 0,
+    amount: moneyToNumber(a._sum.amount as never),
     fill: statusColor(a.status),
   }));
 }
@@ -401,6 +417,7 @@ async function buildPaymentMonthlyBreakdown(
   const map = new Map<string, MonthlyBreakdownItem>();
 
   for (const p of payments) {
+    if (p.month == null || p.year == null) continue;
     const key = `${p.year}-${p.month}`;
     const existing = map.get(key) ?? {
       month: key,
@@ -410,8 +427,9 @@ async function buildPaymentMonthlyBreakdown(
       count: 0,
     };
     existing.count += 1;
-    if (p.status === "completed") existing.revenue += p.amount;
-    else existing.pending += p.amount;
+    if (p.status === "completed" || p.status === "CONFIRMED")
+      existing.revenue += moneyToNumber(p.amount);
+    else existing.pending += moneyToNumber(p.amount);
     map.set(key, existing);
   }
 
@@ -449,7 +467,10 @@ async function buildResidentMonthlyBreakdown(
 function labelPaymentStatus(status: string) {
   switch (status) {
     case "completed":
+    case "CONFIRMED":
       return "Completados";
+    case "VOID":
+      return "Anulados";
     case "pending":
       return "Pendientes";
     case "overdue":
@@ -464,11 +485,13 @@ function labelPaymentStatus(status: string) {
 function statusColor(status: string) {
   switch (status) {
     case "completed":
+    case "CONFIRMED":
     case "paid":
       return DASHBOARD_COLORS.success;
     case "pending":
       return DASHBOARD_COLORS.warning;
     case "overdue":
+    case "VOID":
       return DASHBOARD_COLORS.danger;
     default:
       return DASHBOARD_COLORS.primary;

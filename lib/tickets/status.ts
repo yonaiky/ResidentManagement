@@ -6,7 +6,7 @@ const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   in_progress: ["waiting", "resolved", "assigned", "cancelled"],
   waiting: ["in_progress", "resolved", "cancelled"],
   resolved: ["closed", "in_progress"],
-  closed: [],
+  closed: ["open", "in_progress"],
   cancelled: [],
 };
 

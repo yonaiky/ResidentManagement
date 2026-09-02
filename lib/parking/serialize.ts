@@ -136,10 +136,15 @@ export function serializeVisit(
     id: number;
     plate: string;
     visitorName: string | null;
+    visitorDocument?: string | null;
     validFrom: Date;
     validTo: Date;
     status: string;
     notes: string | null;
+    accessCode?: string | null;
+    accessExpiresAt?: Date | null;
+    checkedInAt?: Date | null;
+    checkedOutAt?: Date | null;
     createdAt: Date;
     hostResident: ResidentRow;
     spot: { id: number; code: string } | null;
@@ -150,6 +155,7 @@ export function serializeVisit(
     id: v.id,
     plate: v.plate,
     visitorName: v.visitorName,
+    visitorDocument: v.visitorDocument ?? null,
     hostResident: serializeResident(v.hostResident),
     validFrom: v.validFrom.toISOString(),
     validTo: v.validTo.toISOString(),
@@ -157,6 +163,10 @@ export function serializeVisit(
     computedStatus,
     spot: v.spot,
     notes: v.notes,
+    accessCode: v.accessCode ?? null,
+    accessExpiresAt: v.accessExpiresAt?.toISOString() ?? null,
+    checkedInAt: v.checkedInAt?.toISOString() ?? null,
+    checkedOutAt: v.checkedOutAt?.toISOString() ?? null,
     createdAt: v.createdAt.toISOString(),
   };
 }

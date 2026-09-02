@@ -17,8 +17,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await request.json();
-    const assignment = await prisma.parkingAssignment.findUnique({
-      where: { id },
+    const assignment = await prisma.parkingAssignment.findFirst({
+      where: {
+        id,
+        spot: { tenantId: auth.ctx.tenantId },
+      },
     });
     if (!assignment) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

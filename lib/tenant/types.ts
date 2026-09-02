@@ -15,8 +15,10 @@ export type PropertySummary = {
 
 export type TenantContext = {
   tenantId: string;
+  organizationId: string | null;
   propertyId: string | null;
   membershipRole: string;
+  organizationRole: string | null;
   userId: string;
   isPlatformAdmin: boolean;
 };

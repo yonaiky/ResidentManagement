@@ -12,7 +12,10 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "seed:admin": "tsx scripts/seed-admin.ts",
-    "seed:demo-technician": "tsx scripts/seed-demo-technician.ts"
+    "seed:demo-technician": "tsx scripts/seed-demo-technician.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:tenant": "vitest run tests/integration/tenant-isolation"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -93,6 +96,8 @@
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.27",
     "@types/qrcode-terminal": "^0.12.2",
-    "tsx": "^4.22.3"
+    "tsx": "^4.22.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.9"
   }
 }

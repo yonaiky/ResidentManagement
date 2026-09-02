@@ -29,6 +29,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await request.json();
+    const existing = await prisma.parkingVisit.findFirst({
+      where: {
+        id,
+        hostResident: { tenantId: auth.ctx.tenantId },
+      },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const visit = await prisma.parkingVisit.update({
       where: { id },
       data: {

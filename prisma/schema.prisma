@@ -43,9 +43,94 @@ model Tenant {
   parkingSpots      ParkingSpot[]
   vehicles          Vehicle[]
   parkingFines      ParkingFine[]
+  organizations     Organization[]
+  auditLogs         AuditLog[]
+  fees              Fee[]
+  charges           Charge[]
+  expenses          Expense[]
+  receipts          Receipt[]
+  unitCredits       UnitCredit[]
+  receiptSequences  ReceiptSequence[]
+  providers         Provider[]
+  announcements     Announcement[]
+  documentAssets    DocumentAsset[]
+  commonAreas       CommonArea[]
+  reservations      Reservation[]
+  parkingVisits     ParkingVisit[]
 
   @@index([status])
   @@index([plan])
+}
+
+model Organization {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  slug             String
+  organizationType String   @default("residential")
+  status           String   @default("ACTIVE")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant      Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  properties  Property[]
+  memberships OrganizationMembership[]
+  auditLogs   AuditLog[]
+  fees              Fee[]
+  charges           Charge[]
+  expenses          Expense[]
+  receipts          Receipt[]
+  unitCredits       UnitCredit[]
+  receiptSequences  ReceiptSequence[]
+  ledgerPayments    Payment[]
+  providers         Provider[]
+  announcements     Announcement[]
+  documentAssets    DocumentAsset[]
+  commonAreas       CommonArea[]
+  reservations      Reservation[]
+  parkingVisits     ParkingVisit[]
+  maintenanceTickets MaintenanceTicket[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model OrganizationMembership {
+  id             String   @id @default(cuid())
+  organizationId String
+  profileId      String   @db.Uuid
+  role           String   @default("user")
+  status         String   @default("active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile      Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, profileId])
+  @@index([profileId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  tenantId       String
+  organizationId String?
+  userId         String?  @db.Uuid
+  action         String
+  entity         String
+  entityId       String
+  previousValues Json?
+  newValues      Json?
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([organizationId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
 
 model TenantMembership {
@@ -65,23 +150,26 @@ model TenantMembership {
 }
 
 model Property {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  code         String
-  address      String?
-  propertyType String   @default("condominium")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  organizationId String?
+  name           String
+  code           String
+  address        String?
+  propertyType   String   @default("condominium")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  structures Structure[]
-  units      Unit[]
-  tickets    MaintenanceTicket[]
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  structures   Structure[]
+  units        Unit[]
+  tickets      MaintenanceTicket[]
   parkingSpots ParkingSpot[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
+  @@index([organizationId])
 }
 
 model Structure {
@@ -116,11 +204,15 @@ model Unit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  property      Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  structure     Structure?          @relation(fields: [structureId], references: [id], onDelete: SetNull)
-  occupancies   UnitOccupancy[]
-  statusHistory UnitStatusHistory[]
+  property         Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  structure        Structure?          @relation(fields: [structureId], references: [id], onDelete: SetNull)
+  occupancies      UnitOccupancy[]
+  statusHistory    UnitStatusHistory[]
   occupancyHistory OccupancyHistory[]
+  charges          Charge[]
+  payments         Payment[]
+  credits          UnitCredit[]
+  reservations     Reservation[]
 
   @@unique([propertyId, code])
   @@index([propertyId])
@@ -129,16 +221,17 @@ model Unit {
 }
 
 model UnitOccupancy {
-  id         String    @id @default(cuid())
-  unitId     String
-  residentId Int
-  role       String
-  isPrimary  Boolean   @default(false)
-  startDate  DateTime  @default(now())
-  endDate    DateTime?
-  status     String    @default("active")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  unitId                   String
+  residentId               Int
+  role                     String
+  isPrimary                Boolean   @default(false)
+  isResponsibleForPayment  Boolean   @default(false)
+  startDate                DateTime  @default(now())
+  endDate                  DateTime?
+  status                   String    @default("active")
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
@@ -185,8 +278,9 @@ model Profile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenantMemberships TenantMembership[]
-  createdTickets    MaintenanceTicket[] @relation("TicketCreatedBy")
+  tenantMemberships         TenantMembership[]
+  organizationMemberships   OrganizationMembership[]
+  createdTickets            MaintenanceTicket[] @relation("TicketCreatedBy")
   assignedTickets   MaintenanceTicket[] @relation("TicketAssignedTo")
   ticketComments    TicketComment[]
   issuedParkingFines ParkingFine[] @relation("FineIssuedBy")
@@ -219,6 +313,7 @@ model Resident {
   parkingAssignments  ParkingAssignment[]
   hostedParkingVisits ParkingVisit[]      @relation("VisitHost")
   unitOccupancies     UnitOccupancy[]
+  reservations        Reservation[]
 
   @@unique([tenantId, cedula])
   @@unique([tenantId, noRegistro])
@@ -240,21 +335,205 @@ model Token {
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  tenantId    String
-  amount      Float
-  status      String   @default("completed")
-  paymentDate DateTime @default(now())
-  dueDate     DateTime
-  month       Int      @default(1)
-  year        Int      @default(2024)
-  residentId  Int
-  resident    Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               Int       @id @default(autoincrement())
+  tenantId         String
+  organizationId   String?
+  unitId           String?
+  amount           Decimal   @db.Decimal(18, 2)
+  status           String    @default("CONFIRMED")
+  paymentDate      DateTime  @default(now())
+  dueDate          DateTime?
+  month            Int?
+  year             Int?
+  residentId       Int?
+  paymentMethod    String    @default("other")
+  reference        String?
+  notes            String?
+  evidenceUrl      String?
+  createdById      String?   @db.Uuid
+  voidedAt         DateTime?
+  voidedById       String?   @db.Uuid
+  voidReason       String?
+  resident         Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  unit             Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  applications     PaymentApplication[]
+  receipts         Receipt[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([tenantId])
+  @@index([organizationId])
+  @@index([unitId])
+  @@index([tenantId, organizationId, paymentDate])
+  @@index([status])
+}
+
+/// Definición de cobro (cuota). No es la deuda individual.
+model Fee {
+  id               String    @id @default(cuid())
+  tenantId         String
+  organizationId   String
+  name             String
+  concept          String
+  feeType          String    @default("ordinary")
+  recurrence       String    @default("once")
+  amount           Decimal   @db.Decimal(18, 2)
+  periodMonth      Int?
+  periodYear       Int?
+  issueDate        DateTime  @default(now())
+  dueDate          DateTime
+  appliesTo        String    @default("all_active_units")
+  status           String    @default("ACTIVE")
+  createdById      String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  charges      Charge[]
+
+  @@index([tenantId, organizationId])
+  @@index([status])
+}
+
+/// Cargo / deuda individual por unidad (generado desde Fee).
+model Charge {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  organizationId     String
+  feeId              String?
+  unitId             String
+  residentId         Int?
+  concept            String
+  amount             Decimal   @db.Decimal(18, 2)
+  outstandingAmount  Decimal   @db.Decimal(18, 2)
+  issueDate          DateTime  @default(now())
+  dueDate            DateTime
+  status             String    @default("PENDING")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fee          Fee?         @relation(fields: [feeId], references: [id], onDelete: SetNull)
+  unit         Unit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  applications PaymentApplication[]
+  reservations Reservation[]
+
+  @@unique([feeId, unitId])
+  @@index([tenantId, organizationId, unitId])
+  @@index([tenantId, organizationId, dueDate])
+  @@index([tenantId, organizationId, status])
+}
+
+model PaymentApplication {
+  id          String   @id @default(cuid())
+  paymentId   Int
+  chargeId    String
+  amount      Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+  reversedAt  DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  charge  Charge  @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([chargeId])
+}
+
+model Receipt {
+  id             String    @id @default(cuid())
+  tenantId       String
+  organizationId String
+  paymentId      Int
+  number         String
+  issuedAt       DateTime  @default(now())
+  status         String    @default("ISSUED")
+  payerName      String?
+  unitCode       String?
+  method         String?
+  reference      String?
+  amount         Decimal   @db.Decimal(18, 2)
+  conceptsJson   Json?
+  issuedById     String?   @db.Uuid
+  voidedAt       DateTime?
+  voidedById     String?   @db.Uuid
+  voidReason     String?
+  createdAt      DateTime  @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment      Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, number])
+  @@index([tenantId, organizationId])
+  @@index([paymentId])
+}
+
+model ReceiptSequence {
+  id             String @id @default(cuid())
+  tenantId       String
+  organizationId String
+  year           Int
+  lastNumber     Int    @default(0)
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, year])
+}
+
+/// Crédito / anticipo disponible por unidad.
+model UnitCredit {
+  id             String   @id @default(cuid())
+  tenantId       String
+  organizationId String
+  unitId         String
+  amount         Decimal  @db.Decimal(18, 2)
+  sourcePaymentId Int?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  unit         Unit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, organizationId, unitId])
+}
+
+model Expense {
+  id             String    @id @default(cuid())
+  tenantId       String
+  organizationId String
+  providerId     String?
+  expenseDate    DateTime  @default(now())
+  vendor         String?
+  category       String
+  concept        String
+  amount         Decimal   @db.Decimal(18, 2)
+  paymentMethod  String    @default("other")
+  reference      String?
+  evidenceUrl    String?
+  notes          String?
+  status         String    @default("ACTIVE")
+  createdById    String?   @db.Uuid
+  voidedAt       DateTime?
+  voidedById     String?   @db.Uuid
+  voidReason     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  provider     Provider?    @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, organizationId])
+  @@index([tenantId, organizationId, expenseDate])
+  @@index([category])
+  @@index([providerId])
 }
 
 model Notification {
@@ -329,36 +608,42 @@ model InvoiceConfig {
 }
 
 model MaintenanceTicket {
-  id            Int       @id @default(autoincrement())
-  tenantId      String
-  propertyId    String?
-  ticketNumber  String
-  title         String
-  description   String
-  category      String
-  priority      String    @default("medium")
-  status        String    @default("open")
-  location      String?
-  residentId    Int?
-  resident      Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
-  property      Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdById   String    @db.Uuid
-  createdBy     Profile   @relation("TicketCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  assignedToId  String?   @db.Uuid
-  assignedTo    Profile?  @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
-  slaDueAt      DateTime?
-  slaBreached   Boolean   @default(false)
-  resolvedAt    DateTime?
-  closedAt      DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             Int       @id @default(autoincrement())
+  tenantId       String
+  organizationId String?
+  propertyId     String?
+  providerId     String?
+  ticketNumber   String
+  title          String
+  description    String
+  category       String
+  priority       String    @default("medium")
+  status         String    @default("open")
+  location       String?
+  residentId     Int?
+  resident       Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  property       Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  provider       Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  createdById    String    @db.Uuid
+  createdBy      Profile   @relation("TicketCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedToId   String?   @db.Uuid
+  assignedTo     Profile?  @relation("TicketAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  slaDueAt       DateTime?
+  slaBreached    Boolean   @default(false)
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   comments      TicketComment[]
   statusHistory TicketStatusHistory[]
+  attachments   TicketAttachment[]
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
+  @@index([organizationId])
   @@index([status])
   @@index([priority])
   @@index([category])
@@ -366,14 +651,30 @@ model MaintenanceTicket {
   @@index([createdAt])
 }
 
+model TicketAttachment {
+  id           String   @id @default(cuid())
+  ticketId     Int
+  fileName     String
+  filePath     String
+  mimeType     String?
+  sizeBytes    Int?
+  uploadedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+
+  ticket MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
 model TicketComment {
-  id        Int               @id @default(autoincrement())
-  ticketId  Int
-  ticket    MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId  String            @db.Uuid
-  author    Profile           @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  body      String
-  createdAt DateTime          @default(now())
+  id         Int               @id @default(autoincrement())
+  ticketId   Int
+  ticket     MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String            @db.Uuid
+  author     Profile           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  body       String
+  isInternal Boolean           @default(true)
+  createdAt  DateTime          @default(now())
 
   @@index([ticketId])
 }
@@ -472,9 +773,12 @@ model ParkingAssignment {
 
 model ParkingVisit {
   id              Int          @id @default(autoincrement())
+  tenantId        String?
+  organizationId  String?
   plate           String
   plateNormalized String
   visitorName     String?
+  visitorDocument String?
   hostResidentId  Int
   hostResident    Resident     @relation("VisitHost", fields: [hostResidentId], references: [id], onDelete: Cascade)
   validFrom       DateTime
@@ -482,14 +786,26 @@ model ParkingVisit {
   status          String       @default("scheduled")
   spotId          Int?
   spot            ParkingSpot? @relation(fields: [spotId], references: [id], onDelete: SetNull)
+  accessCode      String?
+  accessExpiresAt DateTime?
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  checkedInById   String?      @db.Uuid
+  checkedOutById  String?      @db.Uuid
   notes           String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([hostResidentId])
   @@index([plateNormalized])
   @@index([validFrom, validTo])
   @@index([status])
+  @@index([tenantId, organizationId])
+  @@index([accessCode])
+  @@unique([tenantId, accessCode])
 }
 
 model ParkingFine {
@@ -516,5 +832,150 @@ model ParkingFine {
   @@index([tenantId])
   @@index([plateNormalized])
   @@index([status])
+  @@index([residentId])
+}
+
+model Provider {
+  id               String   @id @default(cuid())
+  tenantId         String
+  organizationId   String
+  name             String
+  serviceType      String
+  taxId            String?
+  phone            String?
+  email            String?
+  address          String?
+  primaryContact   String?
+  status           String   @default("ACTIVE")
+  notes            String?
+  createdByUserId  String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tickets          MaintenanceTicket[]
+  expenses         Expense[]
+
+  @@index([tenantId, organizationId])
+  @@index([tenantId, organizationId, status])
+  @@index([serviceType])
+}
+
+model Announcement {
+  id               String    @id @default(cuid())
+  tenantId         String
+  organizationId   String
+  title            String
+  content          String
+  priority         String    @default("medium")
+  status           String    @default("DRAFT")
+  audienceType     String    @default("ALL")
+  audiencePayload  Json?
+  publishedAt      DateTime?
+  archivedAt       DateTime?
+  createdByUserId  String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, organizationId])
+  @@index([tenantId, organizationId, status])
+  @@index([publishedAt])
+}
+
+model DocumentAsset {
+  id               String    @id @default(cuid())
+  tenantId         String
+  organizationId   String
+  name             String
+  category         String
+  description      String?
+  filePath         String
+  fileName         String
+  mimeType         String?
+  sizeBytes        Int?
+  visibility       String    @default("ADMINS")
+  visibilityPayload Json?
+  version          Int       @default(1)
+  replacesId       String?
+  status           String    @default("ACTIVE")
+  uploadedByUserId String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  replaces     DocumentAsset?  @relation("DocumentVersions", fields: [replacesId], references: [id], onDelete: SetNull)
+  versions     DocumentAsset[] @relation("DocumentVersions")
+
+  @@index([tenantId, organizationId])
+  @@index([tenantId, organizationId, category])
+  @@index([status])
+}
+
+model CommonArea {
+  id                String   @id @default(cuid())
+  tenantId          String
+  organizationId    String
+  name              String
+  description       String?
+  capacity          Int?
+  openTime          String   @default("08:00")
+  closeTime         String   @default("22:00")
+  minDurationMin    Int      @default(60)
+  maxDurationMin    Int      @default(240)
+  requiresApproval  Boolean  @default(true)
+  priceAmount       Decimal? @db.Decimal(18, 2)
+  depositAmount     Decimal? @db.Decimal(18, 2)
+  maxMonthlyPerUnit Int?
+  minAdvanceHours   Int?
+  blockIfDebt       Boolean  @default(false)
+  status            String   @default("ACTIVE")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([tenantId, organizationId])
+  @@index([status])
+}
+
+model Reservation {
+  id             String    @id @default(cuid())
+  tenantId       String
+  organizationId String
+  commonAreaId   String
+  unitId         String?
+  residentId     Int?
+  startAt        DateTime
+  endAt          DateTime
+  status         String    @default("PENDING")
+  amount         Decimal?  @db.Decimal(18, 2)
+  chargeId       String?
+  notes          String?
+  createdByUserId String?  @db.Uuid
+  approvedByUserId String? @db.Uuid
+  approvedAt     DateTime?
+  rejectedAt     DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  commonArea   CommonArea   @relation(fields: [commonAreaId], references: [id], onDelete: Restrict)
+  unit         Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  resident     Resident?    @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  charge       Charge?      @relation(fields: [chargeId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, organizationId])
+  @@index([organizationId, commonAreaId, startAt])
+  @@index([status])
+  @@index([unitId])
   @@index([residentId])
 }

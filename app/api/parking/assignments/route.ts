@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
     const residentId = request.nextUrl.searchParams.get("residentId");
     const vehicleId = request.nextUrl.searchParams.get("vehicleId");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      spot: { tenantId: auth.ctx.tenantId },
+    };
     if (activeOnly) where.endDate = null;
     if (residentId) where.residentId = parseInt(residentId, 10);
     if (vehicleId) where.vehicleId = parseInt(vehicleId, 10);

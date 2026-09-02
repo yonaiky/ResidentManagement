@@ -9,6 +9,7 @@ import {
   loadActiveVisitsForAvailability,
   loadAllSpots,
 } from "@/lib/parking/queries";
+import { moneyToNumber } from "@/lib/finance/money";
 
 function percentChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
@@ -54,9 +55,15 @@ export async function GET() {
     const pendingPaymentsCount = residentsWithPendingPayments.length;
     const pendingPaymentsTotal = residentsWithPendingPayments.reduce((total, resident) => {
       if (resident.payments.length > 0) {
-        return total + resident.payments.reduce((sum, payment) => sum + payment.amount, 0);
+        return (
+          total +
+          resident.payments.reduce(
+            (sum, payment) => sum + moneyToNumber(payment.amount),
+            0
+          )
+        );
       }
-      return total + 700;
+      return total;
     }, 0);
 
     const totalResidents = await prisma.resident.count({ where: tenantWhere });
@@ -101,8 +108,8 @@ export async function GET() {
       where: { ...tenantWhere, month: previousMonth, year: previousYear, status: "completed" },
     });
 
-    const currentMonthTotal = currentMonthPayments.reduce((sum, p) => sum + p.amount, 0);
-    const previousMonthTotal = previousMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+    const currentMonthTotal = currentMonthPayments.reduce((sum, p) => sum + moneyToNumber(p.amount), 0);
+    const previousMonthTotal = previousMonthPayments.reduce((sum, p) => sum + moneyToNumber(p.amount), 0);
     const percentageChange = percentChange(currentMonthTotal, previousMonthTotal);
 
     const prevMonthPending = await prisma.payment.count({
@@ -141,9 +148,11 @@ export async function GET() {
     const formattedActivities = recentActivities.map((payment) => ({
       id: payment.id,
       residentId: payment.residentId,
-      residentName: `${payment.resident.name} ${payment.resident.lastName}`,
-      noRegistro: payment.resident.noRegistro ?? "",
-      amount: payment.amount,
+      residentName: payment.resident
+        ? `${payment.resident.name} ${payment.resident.lastName}`
+        : "—",
+      noRegistro: payment.resident?.noRegistro ?? "",
+      amount: moneyToNumber(payment.amount),
       paymentDate: payment.paymentDate.toISOString(),
     }));
 
@@ -152,10 +161,13 @@ export async function GET() {
       name: `${resident.name} ${resident.lastName}`,
       cedula: resident.cedula,
       noRegistro: resident.noRegistro ?? "",
-      amount: resident.payments.length > 0 ? resident.payments[0].amount : 700,
+      amount:
+        resident.payments.length > 0
+          ? moneyToNumber(resident.payments[0].amount)
+          : 0,
       dueDate:
         resident.payments.length > 0
-          ? resident.payments[0].dueDate.toISOString()
+          ? resident.payments[0].dueDate?.toISOString() ?? null
           : resident.nextPaymentDate?.toISOString() ?? null,
       status:
         resident.payments.length > 0 ? resident.payments[0].status : "pending",
@@ -174,10 +186,10 @@ export async function GET() {
         label,
         revenue: monthPayments
           .filter((p) => p.status === "completed")
-          .reduce((s, p) => s + p.amount, 0),
+          .reduce((s, p) => s + moneyToNumber(p.amount), 0),
         pending: monthPayments
           .filter((p) => p.status === "pending" || p.status === "overdue")
-          .reduce((s, p) => s + p.amount, 0),
+          .reduce((s, p) => s + moneyToNumber(p.amount), 0),
       };
     });
 
@@ -209,7 +221,7 @@ export async function GET() {
         day: date.toISOString().slice(0, 10),
         label: DAY_LABELS[date.getDay()],
         payments: dayPayments.length,
-        amount: dayPayments.reduce((s, p) => s + p.amount, 0),
+        amount: dayPayments.reduce((s, p) => s + moneyToNumber(p.amount), 0),
       };
     });
 
@@ -277,7 +289,7 @@ export async function GET() {
               select: { amount: true },
             });
             return {
-              value: payments.reduce((s, p) => s + p.amount, 0),
+              value: payments.reduce((s, p) => s + moneyToNumber(p.amount), 0),
             };
           }
           const count = await prisma.payment.count({

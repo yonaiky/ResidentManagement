@@ -53,6 +53,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await request.json();
+    const existing = await prisma.parkingSpot.findFirst({
+      where: { id, tenantId: auth.ctx.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const spot = await prisma.parkingSpot.update({
       where: { id },
       data: {
@@ -90,6 +97,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   }
 
   try {
+    const spot = await prisma.parkingSpot.findFirst({
+      where: { id, tenantId: auth.ctx.tenantId },
+    });
+    if (!spot) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const assignmentCount = await prisma.parkingAssignment.count({
       where: { spotId: id },
     });

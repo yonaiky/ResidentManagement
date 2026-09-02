@@ -4,6 +4,7 @@ import {
   slugifyTenantName,
 } from "@/lib/tenant/plans";
 import { assertWithinLimit } from "@/lib/tenant/limits";
+import { writeAuditLog } from "@/lib/audit/log";
 
 export type CreateTenantInput = {
   organizationName: string;
@@ -50,6 +51,25 @@ export async function createTenantWithOwner(input: CreateTenantInput) {
       },
     });
 
+    const organization = await tx.organization.create({
+      data: {
+        tenantId: tenant.id,
+        name: organizationName,
+        slug,
+        organizationType: "residential",
+        status: "ACTIVE",
+      },
+    });
+
+    await tx.organizationMembership.create({
+      data: {
+        organizationId: organization.id,
+        profileId: input.profileId,
+        role: "tenant_admin",
+        status: "active",
+      },
+    });
+
     await tx.profile.update({
       where: { id: input.profileId },
       data: { role: "admin" },
@@ -66,6 +86,7 @@ export async function createTenantWithOwner(input: CreateTenantInput) {
       property = await tx.property.create({
         data: {
           tenantId: tenant.id,
+          organizationId: organization.id,
           name: propertyName,
           code: propertyCode.toUpperCase(),
           propertyType: input.propertyType ?? "condominium",
@@ -74,6 +95,20 @@ export async function createTenantWithOwner(input: CreateTenantInput) {
       });
     }
 
-    return { tenant, property };
+    return { tenant, organization, property };
+  }).then(async (result) => {
+    await writeAuditLog({
+      tenantId: result.tenant.id,
+      organizationId: result.organization.id,
+      userId: input.profileId,
+      action: "create",
+      entity: "Organization",
+      entityId: result.organization.id,
+      newValues: {
+        name: result.organization.name,
+        slug: result.organization.slug,
+      },
+    });
+    return result;
   });
 }
