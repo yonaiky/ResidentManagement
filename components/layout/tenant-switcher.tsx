@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
+import { invalidateCache } from "@/lib/client-fetch-cache";
 
 type TenantOption = { id: string; name: string; slug: string };
 type PropertyOption = { id: string; name: string; code: string };
@@ -35,9 +36,8 @@ export function TenantSwitcher() {
 
       const list = data.tenants ?? [];
       setTenants(list);
-      if (list.length >= 1) {
-        setTenantId(list[0].id);
-      }
+      setTenantId(data.currentTenantId ?? list[0]?.id ?? "");
+      setPropertyId(data.currentPropertyId ?? "");
       setReady(true);
     })().catch(() => {
       if (!cancelled) setReady(true);
@@ -75,26 +75,37 @@ export function TenantSwitcher() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenantId: tId, propertyId: pId }),
     });
+    invalidateCache();
     window.location.reload();
   }
 
   if (tenants.length === 0) return null;
 
   const activeTenant = tenantId || tenants[0]?.id;
+  const activeTenantName =
+    tenants.find((t) => t.id === activeTenant)?.name ?? "Organización";
 
   return (
     <div className="hidden items-center gap-2 md:flex">
+      {tenants.length >= 1 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="max-w-[140px] truncate font-medium">
+            {activeTenantName}
+          </span>
+        </div>
+      )}
       {tenants.length > 1 && (
         <Select
           value={activeTenant}
           onValueChange={(v) => {
             setTenantId(v);
+            setPropertyId("");
             void saveContext(v, null);
           }}
         >
-          <SelectTrigger className="h-9 w-[160px]">
-            <Building2 className="mr-2 h-4 w-4 shrink-0" />
-            <SelectValue placeholder="Organización" />
+          <SelectTrigger className="h-9 w-[140px]">
+            <SelectValue placeholder="Cambiar org." />
           </SelectTrigger>
           <SelectContent>
             {tenants.map((t) => (
@@ -110,7 +121,7 @@ export function TenantSwitcher() {
           value={propertyId || "__all__"}
           onValueChange={(v) => {
             const pid = v === "__all__" ? null : v;
-            setPropertyId(v);
+            setPropertyId(v === "__all__" ? "" : v);
             void saveContext(activeTenant, pid);
           }}
         >

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/tickets/auth";
 import { isTerminalStatus } from "@/lib/tickets/status";
+import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
 import { serializeTicketDetail } from "@/lib/tickets/serialize";
 
 function parseId(id: string): number | null {
@@ -87,6 +88,16 @@ export async function PATCH(
           },
         },
       });
+    });
+
+    await emitOpsEvent({
+      tenantId: auth.ctx.tenantId,
+      organizationId: existing.organizationId,
+      userId: auth.userId,
+      event: OPS_EVENTS.TicketAssigned,
+      entity: "MaintenanceTicket",
+      entityId: String(ticketId),
+      payload: { assignedToId: assignedToId ?? null },
     });
 
     return NextResponse.json(serializeTicketDetail(ticket));

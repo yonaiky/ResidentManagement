@@ -41,9 +41,24 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         residentId: resident.id,
         role,
         isPrimary: Boolean(body.isPrimary),
+        isResponsibleForPayment:
+          body.isResponsibleForPayment != null
+            ? Boolean(body.isResponsibleForPayment)
+            : role === "tenant" || Boolean(body.isPrimary),
         status: "active",
       },
     });
+
+    if (occupancy.isResponsibleForPayment) {
+      await tx.unitOccupancy.updateMany({
+        where: {
+          unitId: params.id,
+          status: "active",
+          id: { not: occupancy.id },
+        },
+        data: { isResponsibleForPayment: false },
+      });
+    }
 
     await tx.occupancyHistory.create({
       data: {

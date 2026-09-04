@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WhatsAppService, DEFAULT_WHATSAPP_CONFIG } from '@/lib/whatsapp';
-import { getAuthUser, hasPermission } from '@/lib/auth';
+import { requireTenantManager } from '@/lib/tenant/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = await getAuthUser();
-    
-    if (!authUser || !hasPermission(authUser.role, 'manager')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const auth = await requireTenantManager();
+    if (auth instanceof NextResponse) return auth;
 
     const { residentId, messageType, customMessage, amount, dueDate } = await request.json();
 
@@ -23,9 +17,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Obtener información del residente
-    const resident = await prisma.resident.findUnique({
-      where: { id: parseInt(residentId) }
+    const resident = await prisma.resident.findFirst({
+      where: { id: parseInt(residentId), tenantId: auth.ctx.tenantId },
     });
 
     if (!resident) {

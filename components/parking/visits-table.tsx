@@ -65,6 +65,49 @@ export function VisitsTable() {
     }
   }
 
+  async function checkIn(v: ParkingVisitItem) {
+    try {
+      const code = v.accessCode
+        ? window.prompt("Código de acceso (PIN)", v.accessCode) || undefined
+        : undefined;
+      const res = await fetch(`/api/parking/visits/${v.id}/check-in`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessCode: code }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Error");
+      toast({ title: "Entrada registrada" });
+      invalidateAll();
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Falló",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function checkOut(id: number) {
+    try {
+      const res = await fetch(`/api/parking/visits/${id}/check-out`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Error");
+      toast({ title: "Salida registrada" });
+      invalidateAll();
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Falló",
+        variant: "destructive",
+      });
+    }
+  }
+
   return (
     <div className="space-y-4">
       {canManage && (
@@ -86,7 +129,9 @@ export function VisitsTable() {
               <TableHead>Vigencia</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Espacio</TableHead>
-              {canManage && <TableHead className="w-[80px]" />}
+              <TableHead>PIN</TableHead>
+              <TableHead>In/Out</TableHead>
+              {canManage && <TableHead className="w-[160px]" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,16 +152,48 @@ export function VisitsTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>{v.spot?.code ?? "—"}</TableCell>
-                {canManage && v.computedStatus !== "cancelled" && (
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => cancelVisit(v.id)}
-                      disabled={v.computedStatus === "expired"}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
+                <TableCell className="font-mono text-xs">
+                  {v.accessCode ?? "—"}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {v.checkedInAt
+                    ? format(new Date(v.checkedInAt), "HH:mm", { locale: es })
+                    : "—"}
+                  {" / "}
+                  {v.checkedOutAt
+                    ? format(new Date(v.checkedOutAt), "HH:mm", { locale: es })
+                    : "—"}
+                </TableCell>
+                {canManage && (
+                  <TableCell className="space-x-1 whitespace-nowrap">
+                    {!v.checkedInAt && v.computedStatus !== "cancelled" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => checkIn(v)}
+                      >
+                        Entrada
+                      </Button>
+                    )}
+                    {v.checkedInAt && !v.checkedOutAt && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => checkOut(v.id)}
+                      >
+                        Salida
+                      </Button>
+                    )}
+                    {v.computedStatus !== "cancelled" && !v.checkedOutAt && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => cancelVisit(v.id)}
+                        disabled={v.computedStatus === "expired"}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 )}
               </TableRow>

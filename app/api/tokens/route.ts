@@ -89,6 +89,9 @@ export async function POST(request: Request) {
 
 // PUT update token
 export async function PUT(request: Request) {
+  const auth = await requireTenantManager();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const { id, name, status } = body;
@@ -98,6 +101,13 @@ export async function PUT(request: Request) {
         { error: 'ID is required' },
         { status: 400 }
       );
+    }
+
+    const existing = await prisma.token.findFirst({
+      where: { id: parseInt(id), tenantId: auth.ctx.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
     }
 
     const token = await prisma.token.update({
@@ -126,6 +136,9 @@ export async function PUT(request: Request) {
 
 // DELETE token
 export async function DELETE(request: Request) {
+  const auth = await requireTenantManager();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -135,6 +148,13 @@ export async function DELETE(request: Request) {
         { error: 'ID is required' },
         { status: 400 }
       );
+    }
+
+    const existing = await prisma.token.findFirst({
+      where: { id: parseInt(id), tenantId: auth.ctx.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
     }
 
     await prisma.token.delete({

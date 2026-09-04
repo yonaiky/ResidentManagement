@@ -1,5 +1,6 @@
 export const TENANT_COOKIE = "rm-tenant-id";
 export const PROPERTY_COOKIE = "rm-property-id";
+export const ORGANIZATION_COOKIE = "rm-organization-id";
 
 export const TENANT_ROLES = [
   "tenant_admin",

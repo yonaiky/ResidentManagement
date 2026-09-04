@@ -44,3 +44,6 @@ next-env.d.ts
 /prisma/migrations/
 /prisma/dev.db-shm
 /prisma/dev.db-wal
+
+# uploads (tickets, documentos)
+/uploads/

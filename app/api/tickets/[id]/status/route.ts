@@ -13,6 +13,8 @@ import {
   requiresManagerForTransition,
 } from "@/lib/tickets/status";
 import { isSlaBreached } from "@/lib/tickets/sla";
+import { writeAuditLog } from "@/lib/audit/log";
+import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
 import { serializeTicketDetail } from "@/lib/tickets/serialize";
 
 function parseId(id: string): number | null {
@@ -73,9 +75,17 @@ export async function PATCH(
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    if (isTerminalStatus(existing.status)) {
+    if (isTerminalStatus(existing.status) && existing.status !== "closed") {
       return NextResponse.json(
         { error: "Cannot change status of a closed ticket" },
+        { status: 400 }
+      );
+    }
+
+    // Reapertura desde closed
+    if (existing.status === "closed" && status !== "open" && status !== "in_progress") {
+      return NextResponse.json(
+        { error: "Desde cerrado solo se puede reabrir a open o in_progress" },
         { status: 400 }
       );
     }
@@ -125,6 +135,38 @@ export async function PATCH(
         data: updateData,
         include: detailInclude,
       });
+    });
+
+    if (status === "resolved") {
+      await emitOpsEvent({
+        tenantId: ticketAuth.ctx.tenantId,
+        organizationId: existing.organizationId,
+        userId: ticketAuth.userId,
+        event: OPS_EVENTS.TicketResolved,
+        entity: "MaintenanceTicket",
+        entityId: String(ticketId),
+      });
+    }
+    if (status === "closed") {
+      await emitOpsEvent({
+        tenantId: ticketAuth.ctx.tenantId,
+        organizationId: existing.organizationId,
+        userId: ticketAuth.userId,
+        event: OPS_EVENTS.TicketClosed,
+        entity: "MaintenanceTicket",
+        entityId: String(ticketId),
+      });
+    }
+
+    await writeAuditLog({
+      tenantId: ticketAuth.ctx.tenantId,
+      organizationId: existing.organizationId,
+      userId: ticketAuth.userId,
+      action: "status_change",
+      entity: "MaintenanceTicket",
+      entityId: String(ticketId),
+      previousValues: { status: existing.status },
+      newValues: { status },
     });
 
     return NextResponse.json(serializeTicketDetail(ticket));

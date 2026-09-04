@@ -49,6 +49,7 @@ export type ParkingVisitItem = {
   id: number;
   plate: string;
   visitorName: string | null;
+  visitorDocument?: string | null;
   hostResident: ParkingResidentSummary;
   validFrom: string;
   validTo: string;
@@ -56,6 +57,10 @@ export type ParkingVisitItem = {
   computedStatus: string;
   spot: { id: number; code: string } | null;
   notes: string | null;
+  accessCode?: string | null;
+  accessExpiresAt?: string | null;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
   createdAt: string;
 };
 

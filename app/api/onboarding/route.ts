@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { isPlatformAdmin } from "@/lib/tenant/auth";
 import { createTenantWithOwner } from "@/lib/tenant/create-tenant";
-import { TENANT_COOKIE, PROPERTY_COOKIE } from "@/lib/tenant/constants";
+import { TENANT_COOKIE, PROPERTY_COOKIE, ORGANIZATION_COOKIE } from "@/lib/tenant/constants";
 
 export async function GET() {
   const user = await getAuthUser();
@@ -61,9 +61,16 @@ export async function POST(request: Request) {
 
     const res = NextResponse.json({
       tenantId: result.tenant.id,
+      organizationId: result.organization.id,
       propertyId: result.property?.id ?? null,
     });
     res.cookies.set(TENANT_COOKIE, result.tenant.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    res.cookies.set(ORGANIZATION_COOKIE, result.organization.id, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

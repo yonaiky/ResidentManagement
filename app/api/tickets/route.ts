@@ -12,6 +12,8 @@ import { generateTicketNumber } from "@/lib/tickets/number";
 import { computeSlaDueAt } from "@/lib/tickets/sla";
 import { serializeTicketListItem } from "@/lib/tickets/serialize";
 import type { CreateTicketInput } from "@/lib/tickets/types";
+import { resolveOrganizationId } from "@/lib/finance/org";
+import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
 
 const ticketInclude = {
   resident: true,
@@ -26,10 +28,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseTicketSearchParams(request.nextUrl.searchParams);
-    const where = mergeTicketListScope(
-      buildTicketWhereClause(filters),
-      auth
-    );
+    const where = mergeTicketListScope(buildTicketWhereClause(filters), auth);
     const orderBy = buildTicketOrderBy(filters);
     const skip = (filters.page - 1) * filters.pageSize;
 
@@ -44,10 +43,8 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const items = tickets.map(serializeTicketListItem);
-
     return NextResponse.json({
-      items,
+      items: tickets.map(serializeTicketListItem),
       total,
       page: filters.page,
       pageSize: filters.pageSize,
@@ -66,9 +63,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const org = await resolveOrganizationId(auth);
+  if (org instanceof NextResponse) return org;
+
   try {
-    const body = (await request.json()) as CreateTicketInput;
-    const { title, description, category, priority, location, residentId } = body;
+    const body = (await request.json()) as CreateTicketInput & {
+      providerId?: string | null;
+    };
+    const {
+      title,
+      description,
+      category,
+      priority,
+      location,
+      residentId,
+      providerId,
+    } = body;
 
     if (!title?.trim() || !description?.trim() || !category) {
       return NextResponse.json(
@@ -86,6 +96,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (providerId) {
+      const provider = await prisma.provider.findFirst({
+        where: {
+          id: providerId,
+          tenantId: auth.ctx.tenantId,
+          organizationId: org.organizationId,
+          status: "ACTIVE",
+        },
+      });
+      if (!provider) {
+        return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+      }
+    }
+
     const createdAt = new Date();
     const ticketNumber = await generateTicketNumber(auth.ctx.tenantId, createdAt);
     const ticketPriority = priority ?? DEFAULT_PRIORITY;
@@ -100,7 +124,9 @@ export async function POST(request: NextRequest) {
       const created = await tx.maintenanceTicket.create({
         data: {
           tenantId: auth.ctx.tenantId,
+          organizationId: org.organizationId,
           propertyId: auth.ctx.propertyId,
+          providerId: providerId ?? null,
           ticketNumber,
           title: title.trim(),
           description: description.trim(),
@@ -127,6 +153,16 @@ export async function POST(request: NextRequest) {
       });
 
       return created;
+    });
+
+    await emitOpsEvent({
+      tenantId: auth.ctx.tenantId,
+      organizationId: org.organizationId,
+      userId: auth.userId,
+      event: OPS_EVENTS.TicketCreated,
+      entity: "MaintenanceTicket",
+      entityId: String(ticket.id),
+      payload: { ticketNumber: ticket.ticketNumber, priority: ticket.priority },
     });
 
     return NextResponse.json(serializeTicketListItem(ticket), { status: 201 });

@@ -23,6 +23,9 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Resident Management System',
   description: 'Manage residents, tokens, and payments efficiently',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico' }],
+  },
 };
 
 export default function RootLayout({
@@ -35,7 +38,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider>
           <AuthWrapper>{children}</AuthWrapper>
           <Toaster />

@@ -13,6 +13,11 @@ import {
   Car,
   Building2,
   Briefcase,
+  Megaphone,
+  FileText,
+  CalendarDays,
+  Truck,
+  Activity,
 } from "lucide-react";
 
 export type UserRole = "admin" | "manager" | "user" | string;
@@ -58,6 +63,13 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Resumen y métricas",
       },
       {
+        href: "/operations",
+        label: "Operación",
+        icon: Activity,
+        description: "Resumen operativo",
+        managerOrAdmin: true,
+      },
+      {
         href: "/properties",
         label: "Propiedades",
         icon: Building2,
@@ -82,6 +94,13 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Transacciones",
       },
       {
+        href: "/finance",
+        label: "Finanzas",
+        icon: BarChart3,
+        description: "Cuotas, cargos y cartera",
+        managerOrAdmin: true,
+      },
+      {
         href: "/reports",
         label: "Reportes",
         icon: BarChart3,
@@ -94,10 +113,38 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Tickets e incidencias",
       },
       {
+        href: "/providers",
+        label: "Proveedores",
+        icon: Truck,
+        description: "Servicios externos",
+        managerOrAdmin: true,
+      },
+      {
         href: "/parking",
         label: "Parqueos",
         icon: Car,
         description: "Vehículos y espacios",
+      },
+      {
+        href: "/amenities",
+        label: "Áreas comunes",
+        icon: CalendarDays,
+        description: "Reservas",
+        managerOrAdmin: true,
+      },
+      {
+        href: "/announcements",
+        label: "Comunicados",
+        icon: Megaphone,
+        description: "Avisos internos",
+        managerOrAdmin: true,
+      },
+      {
+        href: "/documents",
+        label: "Documentos",
+        icon: FileText,
+        description: "Repositorio",
+        managerOrAdmin: true,
       },
       {
         href: "/whatsapp",

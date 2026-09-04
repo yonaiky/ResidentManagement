@@ -1,70 +1,89 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireTenantManager } from "@/lib/tenant/auth";
+import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import { money, moneyToNumber } from "@/lib/finance/money";
+import { resolveOrganizationId } from "@/lib/finance/org";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const auth = await requireTenantAuth();
+  if (auth instanceof NextResponse) return auth;
+
+  const residentId = parseInt(params.id, 10);
+  if (Number.isNaN(residentId)) {
+    return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+  }
+
   try {
+    const resident = await prisma.resident.findFirst({
+      where: { id: residentId, tenantId: auth.ctx.tenantId },
+    });
+    if (!resident) {
+      return NextResponse.json({ error: "Residente no encontrado" }, { status: 404 });
+    }
+
     const payments = await prisma.payment.findMany({
-      where: {
-        residentId: parseInt(params.id)
-      },
+      where: { residentId, tenantId: auth.ctx.tenantId },
       include: {
         resident: {
           select: {
             name: true,
             lastName: true,
-            noRegistro: true
-          }
-        }
+            noRegistro: true,
+          },
+        },
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: { createdAt: "desc" },
     });
 
-    // Transformar los datos para incluir información adicional
-    const formattedPayments = payments.map(payment => ({
+    const formattedPayments = payments.map((payment) => ({
       ...payment,
-      residentName: `${payment.resident.name} ${payment.resident.lastName}`,
-      noRegistro: payment.resident.noRegistro,
-      monthName: new Date(payment.year, payment.month - 1).toLocaleString('es', { month: 'long' }),
-      year: payment.year
+      amount: moneyToNumber(payment.amount),
+      residentName: payment.resident
+        ? `${payment.resident.name} ${payment.resident.lastName}`
+        : "—",
+      noRegistro: payment.resident?.noRegistro,
+      monthName: payment.month && payment.year
+        ? new Date(payment.year, payment.month - 1).toLocaleString("es", {
+            month: "long",
+          })
+        : "",
+      year: payment.year,
     }));
 
     return NextResponse.json(formattedPayments);
   } catch (error) {
-    console.error('Error fetching payments:', error);
-    return NextResponse.json({ error: "Error al obtener los pagos" }, { status: 500 });
+    console.error("Error fetching payments:", error);
+    return NextResponse.json(
+      { error: "Error al obtener los pagos" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   const auth = await requireTenantManager();
   if (auth instanceof NextResponse) return auth;
 
-  console.log('Iniciando registro de pago...');
-  console.log('Params:', params);
-  
   try {
-    // Validar que el ID sea un número válido
-    const residentId = parseInt(params.id);
-    console.log('Resident ID:', residentId);
-    
-    if (isNaN(residentId)) {
-      console.log('ID de residente inválido');
+    const residentId = parseInt(params.id, 10);
+
+    if (Number.isNaN(residentId)) {
       return NextResponse.json(
         { error: "ID de residente inválido" },
         { status: 400 }
       );
     }
 
-    // Validar que el body sea JSON válido
     let body;
     try {
       body = await request.json();
-      console.log('Request body:', body);
-    } catch (e) {
-      console.error('Error parsing JSON:', e);
+    } catch {
       return NextResponse.json(
         { error: "JSON inválido en el body" },
         { status: 400 }
@@ -72,10 +91,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const { amount, month, year } = body;
-    console.log('Payment data:', { amount, month, year });
-    
+
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      console.log('Monto inválido');
       return NextResponse.json(
         { error: "El monto debe ser un número válido mayor que 0" },
         { status: 400 }
@@ -83,100 +100,93 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 
     const today = new Date();
-    const paymentMonth = month || (today.getMonth() + 1);
+    const paymentMonth = month || today.getMonth() + 1;
     const paymentYear = year || today.getFullYear();
-    
-    console.log('Fecha de pago:', { paymentMonth, paymentYear });
 
-    // Verificar si el residente existe
-    console.log('Buscando residente...');
     const resident = await prisma.resident.findFirst({
       where: { id: residentId, tenantId: auth.ctx.tenantId },
     });
 
     if (!resident) {
-      console.log('Residente no encontrado');
       return NextResponse.json(
         { error: "Residente no encontrado" },
         { status: 404 }
       );
     }
-    console.log('Residente encontrado:', resident);
 
-    // Verificar si ya existe un pago para este mes y año
-    console.log('Verificando pagos existentes...');
     const existingPayment = await prisma.payment.findFirst({
       where: {
-        AND: [
-          { residentId: residentId },
-          { month: paymentMonth },
-          { year: paymentYear }
-        ]
-      }
+        residentId,
+        tenantId: auth.ctx.tenantId,
+        month: paymentMonth,
+        year: paymentYear,
+      },
     });
 
     if (existingPayment) {
-      console.log('Pago existente encontrado');
       return NextResponse.json(
-        { error: `Ya existe un pago registrado para ${new Date(paymentYear, paymentMonth - 1).toLocaleString('es', { month: 'long' })} ${paymentYear}` },
+        {
+          error: `Ya existe un pago registrado para ${new Date(paymentYear, paymentMonth - 1).toLocaleString("es", { month: "long" })} ${paymentYear}`,
+        },
         { status: 400 }
       );
     }
 
-    // Calcular la fecha de vencimiento (día 30 del mes especificado)
     const dueDate = new Date(paymentYear, paymentMonth - 1, 30);
-    console.log('Fecha de vencimiento:', dueDate);
 
-    // Crear el pago
-    console.log('Creando pago...');
+    const org = await resolveOrganizationId(auth);
+    const organizationId =
+      org instanceof NextResponse ? null : org.organizationId;
+
     const payment = await prisma.payment.create({
       data: {
         tenantId: auth.ctx.tenantId,
-        amount: parseFloat(amount),
-        residentId: residentId,
+        organizationId,
+        amount: money(parseFloat(amount)),
+        residentId,
         paymentDate: today,
         dueDate,
         month: paymentMonth,
         year: paymentYear,
-        status: 'completed'
-      }
+        status: "CONFIRMED",
+        createdById: auth.userId,
+      },
     });
-    console.log('Pago creado:', payment);
 
-    // Actualizar el estado del residente solo si es el mes actual o futuro
     const currentMonth = today.getMonth() + 1;
     const currentYear = today.getFullYear();
-    
-    if (paymentYear > currentYear || (paymentYear === currentYear && paymentMonth >= currentMonth)) {
-      console.log('Actualizando estado del residente...');
-      
-      // Calcular la fecha del próximo pago
+
+    if (
+      paymentYear > currentYear ||
+      (paymentYear === currentYear && paymentMonth >= currentMonth)
+    ) {
       let nextPaymentDate;
       if (paymentMonth === 12) {
-        nextPaymentDate = new Date(paymentYear + 1, 0, 30); // Enero del siguiente año
+        nextPaymentDate = new Date(paymentYear + 1, 0, 30);
       } else {
-        nextPaymentDate = new Date(paymentYear, paymentMonth, 30); // Siguiente mes
+        nextPaymentDate = new Date(paymentYear, paymentMonth, 30);
       }
-      
+
       await prisma.resident.update({
         where: { id: residentId },
         data: {
-          paymentStatus: 'paid',
+          paymentStatus: "paid",
           lastPaymentDate: today,
-          nextPaymentDate
-        }
+          nextPaymentDate,
+        },
       });
-      console.log('Estado del residente actualizado');
     }
 
-    return NextResponse.json(payment);
+    return NextResponse.json({
+      ...payment,
+      amount: moneyToNumber(payment.amount),
+    });
   } catch (error) {
-    console.error('Error detallado:', error);
+    console.error("Error detallado:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Error al registrar el pago",
         details: error instanceof Error ? error.message : "Error desconocido",
-        stack: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     );

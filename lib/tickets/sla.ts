@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { CLOSED_STATUSES, DEFAULT_SLA_HOURS } from "./constants";
 
+/** Defaults por prioridad si no hay regla configurada (Fase 3 SLA básico). */
+const PRIORITY_DEFAULT_HOURS: Record<string, number> = {
+  urgent: 4,
+  high: 8,
+  medium: 24,
+  low: 72,
+};
+
 export async function getResolutionHours(
   tenantId: string,
   category: string,
@@ -11,7 +19,8 @@ export async function getResolutionHours(
       tenantId_category_priority: { tenantId, category, priority },
     },
   });
-  return rule?.resolutionHours ?? DEFAULT_SLA_HOURS;
+  if (rule) return rule.resolutionHours;
+  return PRIORITY_DEFAULT_HOURS[priority] ?? DEFAULT_SLA_HOURS;
 }
 
 export async function computeSlaDueAt(

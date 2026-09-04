@@ -17,6 +17,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await request.json();
+    const existing = await prisma.vehicle.findFirst({
+      where: { id, tenantId: auth.ctx.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const vehicle = await prisma.vehicle.update({
       where: { id },
       data: {
