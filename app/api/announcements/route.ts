@@ -3,6 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
 import { resolveOrganizationId } from "@/lib/finance/org";
 import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import {
+  announcementAudienceSchema,
+  announcementStatusSchema,
+} from "@/lib/validation/enums";
+import { optionalLongText, shortText } from "@/lib/validation/common";
+
+// `priority` stays unconstrained: the UI exposes no selector for it and only
+// the "medium" default is ever written, so there is no proven value set.
+const createAnnouncementSchema = z.object({
+  title: shortText,
+  content: optionalLongText.min(1),
+  priority: shortText.optional(),
+  status: announcementStatusSchema.optional(),
+  audienceType: announcementAudienceSchema.optional(),
+  audiencePayload: z.unknown().optional(),
+});
 
 export async function GET(request: NextRequest) {
   const auth = await requireTenantAuth();
@@ -40,21 +58,17 @@ export async function POST(request: NextRequest) {
   if (org instanceof NextResponse) return org;
 
   try {
-    const body = await request.json();
-    if (!body.title?.trim() || !body.content?.trim()) {
-      return NextResponse.json(
-        { error: "title y content son requeridos" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, createAnnouncementSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const status = body.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
     const announcement = await prisma.announcement.create({
       data: {
         tenantId: auth.ctx.tenantId,
         organizationId: org.organizationId,
-        title: String(body.title).trim(),
-        content: String(body.content).trim(),
+        title: body.title,
+        content: body.content,
         priority: body.priority || "medium",
         status,
         audienceType: body.audienceType || "ALL",

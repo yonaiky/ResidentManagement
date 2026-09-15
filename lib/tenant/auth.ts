@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser, hasPermission, type AuthUser } from "@/lib/auth";
+import { getAuthUser, type AuthUser } from "@/lib/auth";
 import { isTechnician } from "@/lib/roles";
 import {
   getCookieOrganizationId,
@@ -145,6 +145,7 @@ export async function getTenantContext(
       propertyId,
       membershipRole: "tenant_admin",
       organizationRole: orgCtx.organizationRole,
+      effectiveRole: orgCtx.organizationRole ?? "tenant_admin",
       userId: user.userId,
       isPlatformAdmin: true,
     };
@@ -178,14 +179,13 @@ export async function getTenantContext(
     if (!prop) propertyId = null;
   }
 
-  const effectiveRole = orgCtx.organizationRole ?? membership.role;
-
   return {
     tenantId: membership.tenantId,
     organizationId: orgCtx.organizationId,
     propertyId,
     membershipRole: membership.role,
     organizationRole: orgCtx.organizationRole,
+    effectiveRole: orgCtx.organizationRole ?? membership.role,
     userId: user.userId,
     isPlatformAdmin: false,
   };
@@ -223,7 +223,7 @@ export async function requireTenantAuth(
     );
   }
 
-  const roleForCheck = ctx.organizationRole ?? ctx.membershipRole;
+  const roleForCheck = ctx.effectiveRole;
 
   if (!ctx.isPlatformAdmin) {
     if (minRole === "tenant_admin" && roleForCheck !== "tenant_admin") {
@@ -256,21 +256,3 @@ export async function requireTenantManager(): Promise<
   return requireTenantAuth("manager");
 }
 
-export async function getEffectiveRoleForTickets(
-  user: AuthUser,
-  ctx: TenantContext
-): Promise<string> {
-  if (ctx.isPlatformAdmin) return "admin";
-  const role = ctx.organizationRole ?? ctx.membershipRole;
-  return role === "tenant_admin" ? "admin" : role;
-}
-
-export function legacyHasPermission(
-  effectiveRole: string,
-  requiredRole: string
-): boolean {
-  if (effectiveRole === "tenant_admin")
-    return hasPermission("admin", requiredRole);
-  if (effectiveRole === "technician") return isTechnician(effectiveRole);
-  return hasPermission(effectiveRole, requiredRole);
-}

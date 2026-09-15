@@ -71,6 +71,14 @@ export async function registerPayment(input: RegisterPaymentInput) {
   });
   if (!unit) throw new Error("Unit not found");
 
+  if (input.residentId != null) {
+    const resident = await prisma.resident.findFirst({
+      where: { id: input.residentId, tenantId: input.tenantId },
+      select: { id: true },
+    });
+    if (!resident) throw new Error("Resident not found");
+  }
+
   return prisma.$transaction(async (tx) => {
     const chargeWhere: Prisma.ChargeWhereInput = {
       tenantId: input.tenantId,

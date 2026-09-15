@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WhatsAppService, DEFAULT_WHATSAPP_CONFIG } from '@/lib/whatsapp';
 import { getAuthUser, hasPermission } from '@/lib/auth';
+import { WHATSAPP_ENABLED } from '@/lib/features';
+import { whatsappDisabledResponse } from '../disabled';
 
 export async function GET(request: NextRequest) {
+  if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
   try {
     const authUser = await getAuthUser();
     
@@ -32,6 +36,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
   try {
     const authUser = await getAuthUser();
     

@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireParkingManager } from "@/lib/parking/auth";
 import { serializeVisit } from "@/lib/parking/serialize";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { visitStatusSchema } from "@/lib/validation/enums";
+import { optionalLongText, optionalShortText } from "@/lib/validation/common";
 
 type RouteContext = { params: { id: string } };
+
+const patchVisitSchema = z.object({
+  status: visitStatusSchema.optional(),
+  spotId: z.union([z.coerce.number().int(), z.null(), z.literal("")]).optional(),
+  visitorName: optionalShortText.nullable().optional(),
+  notes: optionalLongText.nullable().optional(),
+});
 
 const visitInclude = {
   hostResident: {
@@ -28,7 +39,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, patchVisitSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+
     const existing = await prisma.parkingVisit.findFirst({
       where: {
         id,
@@ -39,13 +53,34 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    let nextSpotId: number | null | undefined;
+    if (body.spotId !== undefined) {
+      if (!body.spotId) {
+        nextSpotId = null;
+      } else {
+        const spotId = parseInt(String(body.spotId), 10);
+        if (Number.isNaN(spotId)) {
+          return NextResponse.json({ error: "Invalid spotId" }, { status: 400 });
+        }
+        const spot = await prisma.parkingSpot.findFirst({
+          where: { id: spotId, tenantId: auth.ctx.tenantId },
+          select: { id: true },
+        });
+        if (!spot) {
+          return NextResponse.json(
+            { error: "Espacio no encontrado" },
+            { status: 404 }
+          );
+        }
+        nextSpotId = spot.id;
+      }
+    }
+
     const visit = await prisma.parkingVisit.update({
       where: { id },
       data: {
         ...(body.status !== undefined && { status: body.status }),
-        ...(body.spotId !== undefined && {
-          spotId: body.spotId ? parseInt(String(body.spotId), 10) : null,
-        }),
+        ...(nextSpotId !== undefined && { spotId: nextSpotId }),
         ...(body.visitorName !== undefined && {
           visitorName: body.visitorName
             ? String(body.visitorName).trim()

@@ -19,9 +19,9 @@ export async function PUT(
     const userId = params.id;
     const isSelf = auth.userId === userId;
     const canAdmin =
-      auth.ctx.isPlatformAdmin || auth.ctx.membershipRole === "tenant_admin";
+      auth.ctx.isPlatformAdmin || auth.ctx.effectiveRole === "tenant_admin";
 
-    if (!isSelf && !canAdmin && auth.ctx.membershipRole !== "manager") {
+    if (!isSelf && !canAdmin && auth.ctx.effectiveRole !== "manager") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -4,6 +4,27 @@ import { resolveOrganizationId } from "@/lib/finance/org";
 import { registerPayment, voidPayment } from "@/lib/finance/payments";
 import { moneyToNumber } from "@/lib/finance/money";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { paymentMethodSchema } from "@/lib/validation/enums";
+import {
+  cuidList,
+  dateValue,
+  optionalLongText,
+  optionalShortText,
+  positiveAmount,
+} from "@/lib/validation/common";
+
+const registerPaymentSchema = z.object({
+  unitId: z.string().min(1),
+  amount: positiveAmount,
+  paymentMethod: paymentMethodSchema.optional(),
+  reference: optionalShortText.optional(),
+  notes: optionalLongText.optional(),
+  paymentDate: dateValue.optional(),
+  residentId: z.coerce.number().int().positive().nullable().optional(),
+  chargeIds: cuidList.optional(),
+});
 
 export async function GET(request: NextRequest) {
   const auth = await requireTenantAuth();
@@ -51,21 +72,19 @@ export async function POST(request: NextRequest) {
   if (org instanceof NextResponse) return org;
 
   try {
-    const body = await request.json();
-    const amount = parseFloat(body.amount);
-    if (!body.unitId || !Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, registerPaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const result = await registerPayment({
       tenantId: auth.ctx.tenantId,
       organizationId: org.organizationId,
       unitId: body.unitId,
-      amount,
+      amount: body.amount,
       paymentMethod: body.paymentMethod,
       reference: body.reference,
       notes: body.notes,
-      paymentDate: body.paymentDate ? new Date(body.paymentDate) : undefined,
+      paymentDate: body.paymentDate,
       residentId: body.residentId ?? null,
       chargeIds: body.chargeIds,
       registeredByUserId: auth.userId,

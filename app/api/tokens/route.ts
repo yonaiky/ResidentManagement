@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
 import { mergeTenantWhere } from "@/lib/tenant/scope";
 import { assertWithinLimit } from "@/lib/tenant/limits";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { tokenStatusSchema } from "@/lib/validation/enums";
+import { intIdFromString, shortText } from "@/lib/validation/common";
+
+const updateTokenSchema = z.object({
+  id: intIdFromString,
+  name: shortText.optional(),
+  status: tokenStatusSchema.optional(),
+});
 
 // GET all tokens
 export async function GET() {
@@ -93,25 +103,19 @@ export async function PUT(request: Request) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const body = await request.json();
-    const { id, name, status } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'ID is required' },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, updateTokenSchema);
+    if (!parsed.ok) return parsed.response;
+    const { id, name, status } = parsed.data;
 
     const existing = await prisma.token.findFirst({
-      where: { id: parseInt(id), tenantId: auth.ctx.tenantId },
+      where: { id, tenantId: auth.ctx.tenantId },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Token not found' }, { status: 404 });
     }
 
     const token = await prisma.token.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: {
         name,
         status,

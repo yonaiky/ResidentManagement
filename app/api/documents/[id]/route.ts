@@ -38,7 +38,7 @@ export async function GET(
   if (!doc) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!canDownload(doc.visibility, auth.ctx.membershipRole, auth.ctx.isPlatformAdmin)) {
+  if (!canDownload(doc.visibility, auth.ctx.effectiveRole, auth.ctx.isPlatformAdmin)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (!doc.filePath.includes(auth.ctx.tenantId)) {

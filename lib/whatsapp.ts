@@ -1,3 +1,4 @@
+import 'server-only';
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 

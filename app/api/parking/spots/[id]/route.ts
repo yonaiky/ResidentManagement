@@ -10,6 +10,22 @@ import {
   loadActiveVisitsForAvailability,
 } from "@/lib/parking/queries";
 import { serializeSpot } from "@/lib/parking/serialize";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { spotStatusSchema, spotTypeSchema } from "@/lib/validation/enums";
+import {
+  optionalLongText,
+  optionalShortText,
+  shortText,
+} from "@/lib/validation/common";
+
+const patchSpotSchema = z.object({
+  code: shortText.optional(),
+  zone: optionalShortText.nullable().optional(),
+  spotType: spotTypeSchema.optional(),
+  status: spotStatusSchema.optional(),
+  notes: optionalLongText.nullable().optional(),
+});
 
 type RouteContext = { params: { id: string } };
 
@@ -52,7 +68,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, patchSpotSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+
     const existing = await prisma.parkingSpot.findFirst({
       where: { id, tenantId: auth.ctx.tenantId },
     });

@@ -59,6 +59,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EditResidentModal } from "@/components/residents/edit-resident-modal";
 import { AddResidentModal } from "@/components/residents/add-resident-modal";
 import { SendMessageModal } from "@/components/whatsapp/send-message-modal";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 type Resident = {
   id: number;
@@ -278,7 +279,7 @@ export function ResidentsTable() {
                           <div className="flex items-center gap-2 text-sm">
                             <Phone className="h-3 w-3 text-muted-foreground" />
                             {resident.phone}
-                            {resident.phone && (
+                            {WHATSAPP_ENABLED && resident.phone && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -349,7 +350,7 @@ export function ResidentsTable() {
                               Registrar Pago
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {resident.phone && (
+                            {WHATSAPP_ENABLED && resident.phone && (
                               <DropdownMenuItem onClick={() => handleSendWhatsApp(resident)}>
                                 <MessageCircle className="mr-2 h-4 w-4" />
                                 Enviar WhatsApp

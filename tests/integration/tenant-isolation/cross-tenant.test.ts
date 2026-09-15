@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   seedTwoTenants,
   cleanupTwoTenants,
@@ -110,7 +110,7 @@ describe.skipIf(!hasDb)("tenant isolation", () => {
     );
 
     const res = await getReports(
-      new Request("http://localhost/api/reports?reportType=payments")
+      new NextRequest("http://localhost/api/reports?reportType=payments")
     );
 
     expect(res.status).toBe(401);

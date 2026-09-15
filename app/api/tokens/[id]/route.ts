@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { tokenStatusSchema } from "@/lib/validation/enums";
+import { shortText } from "@/lib/validation/common";
+
+const updateTokenSchema = z.object({
+  name: shortText.optional(),
+  status: tokenStatusSchema.optional(),
+});
 
 export async function GET(
   _request: Request,
@@ -57,12 +66,12 @@ export async function PUT(
       return NextResponse.json({ error: "Token not found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { name, status } = body;
+    const parsed = await parseJsonBody(request, updateTokenSchema);
+    if (!parsed.ok) return parsed.response;
 
     const token = await prisma.token.update({
       where: { id: tokenId },
-      data: { name, status },
+      data: { name: parsed.data.name, status: parsed.data.status },
     });
 
     return NextResponse.json(token);
