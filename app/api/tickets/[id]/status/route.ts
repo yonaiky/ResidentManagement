@@ -48,7 +48,7 @@ export async function PATCH(
   const ticketAuth = await requireTicketAuth();
   if (ticketAuth instanceof NextResponse) return ticketAuth;
 
-  const asTechnician = isTechnician(ticketAuth.ctx.membershipRole);
+  const asTechnician = isTechnician(ticketAuth.ctx.effectiveRole);
 
   if (!asTechnician) {
     const managerAuth = await requireAuth("manager");

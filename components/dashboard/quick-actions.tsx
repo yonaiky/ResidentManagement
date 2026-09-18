@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CreditCard, Key, Plus, Users, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 const actions = [
   {
@@ -24,12 +25,17 @@ const actions = [
     icon: Key,
     color: "from-violet-500/20 to-violet-600/5 text-violet-600 dark:text-violet-400",
   },
-  {
-    href: "/whatsapp",
-    label: "WhatsApp",
-    icon: MessageCircle,
-    color: "from-cyan-500/20 to-cyan-600/5 text-cyan-600 dark:text-cyan-400",
-  },
+  ...(WHATSAPP_ENABLED
+    ? [
+        {
+          href: "/whatsapp",
+          label: "WhatsApp",
+          icon: MessageCircle,
+          color:
+            "from-cyan-500/20 to-cyan-600/5 text-cyan-600 dark:text-cyan-400",
+        },
+      ]
+    : []),
   {
     href: "/residents",
     label: "Ver residentes",

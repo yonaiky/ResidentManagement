@@ -16,6 +16,16 @@ export type TwoTenantSeed = {
   tokenB: { id: number };
   profileA: { id: string };
   profileB: { id: string };
+  propertyA: { id: string };
+  propertyB: { id: string };
+  spotA: { id: number };
+  spotB: { id: number };
+  vehicleA: { id: number };
+  vehicleB: { id: number };
+  ticketA: { id: number };
+  visitA: { id: number };
+  structureB: { id: string };
+  commonAreaA: { id: string };
 };
 
 const PREFIX = `test-isolation-${Date.now()}`;
@@ -198,6 +208,73 @@ export async function seedTwoTenants(): Promise<TwoTenantSeed> {
     },
   });
 
+  const spotA = await prisma.parkingSpot.create({
+    data: { tenantId: tenantA.id, propertyId: propertyA.id, code: "A-P1" },
+  });
+
+  const spotB = await prisma.parkingSpot.create({
+    data: { tenantId: tenantB.id, propertyId: propertyB.id, code: "B-P1" },
+  });
+
+  const vehicleA = await prisma.vehicle.create({
+    data: {
+      tenantId: tenantA.id,
+      residentId: residentA.id,
+      plate: "A1234",
+      plateNormalized: "A1234",
+    },
+  });
+
+  const vehicleB = await prisma.vehicle.create({
+    data: {
+      tenantId: tenantB.id,
+      residentId: residentB.id,
+      plate: "B1234",
+      plateNormalized: "B1234",
+    },
+  });
+
+  const ticketA = await prisma.maintenanceTicket.create({
+    data: {
+      tenantId: tenantA.id,
+      organizationId: orgA.id,
+      ticketNumber: `${PREFIX}-T1`,
+      title: "Fuga de agua",
+      description: "Fuga en el pasillo",
+      category: "plumbing",
+      createdById: profileA.id,
+    },
+  });
+
+  const visitA = await prisma.parkingVisit.create({
+    data: {
+      tenantId: tenantA.id,
+      organizationId: orgA.id,
+      hostResidentId: residentA.id,
+      plate: "V1234",
+      plateNormalized: "V1234",
+      validFrom: new Date(Date.now() - 60_000),
+      validTo: new Date(Date.now() + 3_600_000),
+    },
+  });
+
+  const structureB = await prisma.structure.create({
+    data: {
+      propertyId: propertyB.id,
+      name: "Torre B",
+      structureType: "tower",
+    },
+  });
+
+  const commonAreaA = await prisma.commonArea.create({
+    data: {
+      tenantId: tenantA.id,
+      organizationId: orgA.id,
+      name: "Salón A",
+      requiresApproval: false,
+    },
+  });
+
   return {
     tenantA,
     tenantB,
@@ -213,13 +290,29 @@ export async function seedTwoTenants(): Promise<TwoTenantSeed> {
     tokenB,
     profileA,
     profileB,
+    propertyA,
+    propertyB,
+    spotA,
+    spotB,
+    vehicleA,
+    vehicleB,
+    ticketA,
+    visitA,
+    structureB,
+    commonAreaA,
   };
 }
 
 export async function cleanupTwoTenants(seed?: TwoTenantSeed): Promise<void> {
   if (!seed) return;
+  const tenantIds = [seed.tenantA.id, seed.tenantB.id];
+  // ParkingAssignment restricts deletion of its spot and vehicle, so it has to
+  // go before the tenant cascade reaches them.
+  await prisma.parkingAssignment.deleteMany({
+    where: { spot: { tenantId: { in: tenantIds } } },
+  });
   await prisma.tenant.deleteMany({
-    where: { id: { in: [seed.tenantA.id, seed.tenantB.id] } },
+    where: { id: { in: tenantIds } },
   });
   await prisma.profile.deleteMany({
     where: { id: { in: [seed.profileA.id, seed.profileB.id] } },
@@ -242,6 +335,7 @@ export function mockAuthContext(
       propertyId: null,
       membershipRole: "tenant_admin",
       organizationRole: "tenant_admin",
+      effectiveRole: "tenant_admin",
       userId,
       isPlatformAdmin: false,
     },

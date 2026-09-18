@@ -32,6 +32,14 @@ export async function createReservation(input: CreateReservationInput) {
   });
   if (!area) throw new Error("Área común no encontrada");
 
+  if (input.residentId != null) {
+    const resident = await prisma.resident.findFirst({
+      where: { id: input.residentId, tenantId: input.tenantId },
+      select: { id: true },
+    });
+    if (!resident) throw new Error("Residente no encontrado");
+  }
+
   if (input.endAt <= input.startAt) {
     throw new Error("Horario inválido");
   }

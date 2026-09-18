@@ -12,6 +12,7 @@ import {
   MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
 
@@ -65,11 +66,15 @@ export function MobileNav() {
       label: "Payments",
       icon: CreditCard,
     },
-    {
-      href: "/whatsapp",
-      label: "WhatsApp",
-      icon: MessageCircle,
-    },
+    ...(WHATSAPP_ENABLED
+      ? [
+          {
+            href: "/whatsapp",
+            label: "WhatsApp",
+            icon: MessageCircle,
+          },
+        ]
+      : []),
   ];
 
   // Add user management route for admins and managers

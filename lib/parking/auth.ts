@@ -10,7 +10,7 @@ export async function requireParkingAuth(): Promise<
 > {
   const auth = await requireTenantAuth("user");
   if (auth instanceof NextResponse) return auth;
-  if (isTechnician(auth.ctx.membershipRole)) {
+  if (isTechnician(auth.ctx.effectiveRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return auth;
@@ -29,7 +29,7 @@ export async function requireParkingAdmin(): Promise<
   if (auth instanceof NextResponse) return auth;
   if (
     !auth.ctx.isPlatformAdmin &&
-    !hasTenantPermission(auth.ctx.membershipRole, "tenant_admin")
+    !hasTenantPermission(auth.ctx.effectiveRole, "tenant_admin")
   ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

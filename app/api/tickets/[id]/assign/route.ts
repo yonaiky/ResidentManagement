@@ -44,10 +44,20 @@ export async function PATCH(
     }
 
     if (assignedToId) {
-      const assignee = await prisma.profile.findUnique({
-        where: { id: assignedToId },
+      const membership = await prisma.tenantMembership.findUnique({
+        where: {
+          tenantId_profileId: {
+            tenantId: auth.ctx.tenantId,
+            profileId: assignedToId,
+          },
+        },
+        include: { profile: { select: { isActive: true } } },
       });
-      if (!assignee || !assignee.isActive) {
+      if (
+        !membership ||
+        membership.status !== "active" ||
+        !membership.profile.isActive
+      ) {
         return NextResponse.json({ error: "Assignee not found or inactive" }, { status: 404 });
       }
     }

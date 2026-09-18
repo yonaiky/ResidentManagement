@@ -53,24 +53,26 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const vehicle = await tx.vehicle.findUnique({
-        where: { id: vehicleId },
+      const vehicle = await tx.vehicle.findFirst({
+        where: { id: vehicleId, tenantId: auth.ctx.tenantId },
         include: { resident: true },
       });
       if (!vehicle || !vehicle.isActive) {
         throw new Error("VEHICLE_NOT_FOUND");
       }
 
-      const spot = await tx.parkingSpot.findUnique({ where: { id: spotId } });
+      const spot = await tx.parkingSpot.findFirst({
+        where: { id: spotId, tenantId: auth.ctx.tenantId },
+      });
       if (!spot) throw new Error("SPOT_NOT_FOUND");
 
       const activeAssignments = await tx.parkingAssignment.findMany({
-        where: { endDate: null },
+        where: { spotId, endDate: null },
       });
       const activeVisits = await tx.parkingVisit.findMany({
         where: {
+          spotId,
           status: { not: "cancelled" },
-          spotId: { not: null },
           validTo: { gte: new Date() },
         },
         select: {

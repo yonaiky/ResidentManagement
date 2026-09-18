@@ -5,6 +5,34 @@ import { mergeTenantWhere } from "@/lib/tenant/scope";
 import { money, moneyToNumber } from "@/lib/finance/money";
 import { resolveOrganizationId } from "@/lib/finance/org";
 import { voidPayment } from "@/lib/finance/payments";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import {
+  legacyPaymentStatusSchema,
+  paymentMethodSchema,
+} from "@/lib/validation/enums";
+import {
+  dateValue,
+  intIdFromString,
+  positiveAmount,
+} from "@/lib/validation/common";
+
+const createPaymentSchema = z.object({
+  amount: positiveAmount,
+  residentId: intIdFromString,
+  paymentDate: dateValue,
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2000).max(2100),
+  paymentMethod: paymentMethodSchema.optional(),
+});
+
+const updatePaymentSchema = z.object({
+  id: intIdFromString,
+  amount: positiveAmount.optional(),
+  status: legacyPaymentStatusSchema.optional(),
+  paymentDate: dateValue.optional(),
+  dueDate: dateValue.optional(),
+});
 
 export async function GET() {
   const auth = await requireTenantAuth();
@@ -61,18 +89,12 @@ export async function POST(request: Request) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const body = await request.json();
-    const { amount, residentId, paymentDate, month, year } = body;
-
-    if (!amount || !residentId || !paymentDate || !month || !year) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, createPaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const { amount, residentId, paymentDate, month, year } = parsed.data;
 
     const resident = await prisma.resident.findFirst({
-      where: { id: parseInt(residentId), tenantId: auth.ctx.tenantId },
+      where: { id: residentId, tenantId: auth.ctx.tenantId },
     });
     if (!resident) {
       return NextResponse.json({ error: "Resident not found" }, { status: 404 });
@@ -86,21 +108,21 @@ export async function POST(request: Request) {
       data: {
         tenantId: auth.ctx.tenantId,
         organizationId,
-        amount: money(parseFloat(amount)),
-        residentId: parseInt(residentId),
-        paymentDate: new Date(paymentDate),
-        month: parseInt(month),
-        year: parseInt(year),
+        amount: money(amount),
+        residentId,
+        paymentDate,
+        month,
+        year,
         dueDate: new Date(year, month - 1, 30),
         createdById: auth.userId,
         status: "CONFIRMED",
-        paymentMethod: body.paymentMethod ?? "other",
+        paymentMethod: parsed.data.paymentMethod ?? "other",
       },
       include: { resident: true },
     });
 
     await prisma.resident.update({
-      where: { id: parseInt(residentId) },
+      where: { id: residentId },
       data: {
         paymentStatus: "paid",
         nextPaymentDate: new Date(year, month, 30),
@@ -129,15 +151,13 @@ export async function PUT(request: Request) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request, updatePaymentSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const { id, status, paymentDate, dueDate } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: "ID is required" }, { status: 400 });
-    }
-
     const existing = await prisma.payment.findFirst({
-      where: { id: parseInt(id), tenantId: auth.ctx.tenantId },
+      where: { id, tenantId: auth.ctx.tenantId },
       include: { applications: true },
     });
     if (!existing) {
@@ -155,12 +175,12 @@ export async function PUT(request: Request) {
     }
 
     const payment = await prisma.payment.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: {
-        amount: body.amount != null ? money(parseFloat(body.amount)) : undefined,
+        amount: body.amount != null ? money(body.amount) : undefined,
         status,
-        paymentDate: paymentDate ? new Date(paymentDate) : undefined,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        paymentDate: paymentDate ?? undefined,
+        dueDate: dueDate ?? undefined,
       },
       include: { resident: true },
     });

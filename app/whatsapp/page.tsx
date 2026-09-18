@@ -231,7 +231,7 @@ export default function WhatsAppPage() {
                               <div className="rounded-full bg-green-500 text-white w-6 h-6 flex items-center justify-center text-sm font-medium">2</div>
                               <div>
                                 <p className="font-medium">Envío Masivo</p>
-                                <p className="text-sm text-muted-foreground">Usa el botón "Envío Masivo" para enviar a múltiples residentes</p>
+                                <p className="text-sm text-muted-foreground">Usa el botón &quot;Envío Masivo&quot; para enviar a múltiples residentes</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">

@@ -32,6 +32,14 @@ export async function createAdHocCharge(input: {
   });
   if (!unit) throw new Error("Unidad no encontrada");
 
+  if (input.residentId != null) {
+    const resident = await prisma.resident.findFirst({
+      where: { id: input.residentId, tenantId: input.tenantId },
+      select: { id: true },
+    });
+    if (!resident) throw new Error("Residente no encontrado");
+  }
+
   const amount = money(input.amount);
   const dueDate = input.dueDate ?? new Date();
   const issueDate = input.issueDate ?? new Date();

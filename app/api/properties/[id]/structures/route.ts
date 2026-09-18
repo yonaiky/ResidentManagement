@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { structureTypeSchema } from "@/lib/validation/enums";
+import { shortText } from "@/lib/validation/common";
 
 type RouteContext = { params: { id: string } };
+
+const createStructureSchema = z.object({
+  name: shortText,
+  structureType: structureTypeSchema,
+  parentId: z.string().min(1).nullable().optional(),
+  sortOrder: z.coerce.number().int().optional(),
+});
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   const auth = await requireTenantAuth();
@@ -30,19 +41,28 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await request.json();
-  if (!body.name?.trim() || !body.structureType) {
-    return NextResponse.json(
-      { error: "name and structureType required" },
-      { status: 400 }
-    );
+  const parsed = await parseJsonBody(request, createStructureSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
+
+  if (body.parentId) {
+    const parent = await prisma.structure.findFirst({
+      where: { id: String(body.parentId), propertyId: params.id },
+      select: { id: true },
+    });
+    if (!parent) {
+      return NextResponse.json(
+        { error: "Estructura padre no encontrada en esta propiedad" },
+        { status: 404 }
+      );
+    }
   }
 
   const structure = await prisma.structure.create({
     data: {
       propertyId: params.id,
       parentId: body.parentId || null,
-      name: body.name.trim(),
+      name: body.name,
       structureType: body.structureType,
       sortOrder: body.sortOrder ?? 0,
     },

@@ -7,8 +7,23 @@ import {
   loadActiveVisitsForAvailability,
 } from "@/lib/parking/queries";
 import { serializeSpot } from "@/lib/parking/serialize";
-import type { CreateSpotInput } from "@/lib/parking/types";
 import { computeSpotAvailability } from "@/lib/parking/availability";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { spotStatusSchema, spotTypeSchema } from "@/lib/validation/enums";
+import {
+  optionalLongText,
+  optionalShortText,
+  shortText,
+} from "@/lib/validation/common";
+
+const createSpotSchema = z.object({
+  code: shortText,
+  zone: optionalShortText.nullable().optional(),
+  spotType: spotTypeSchema.optional(),
+  status: spotStatusSchema.optional(),
+  notes: optionalLongText.nullable().optional(),
+});
 
 export async function GET(request: NextRequest) {
   const auth = await requireParkingAuth();
@@ -56,11 +71,10 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const body = (await request.json()) as CreateSpotInput;
-    const code = body.code?.trim();
-    if (!code) {
-      return NextResponse.json({ error: "code is required" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, createSpotSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+    const code = body.code;
 
     const spot = await prisma.parkingSpot.create({
       data: {

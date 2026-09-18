@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { WHATSAPP_ENABLED } from '@/lib/features';
 
 const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 
@@ -9,6 +10,10 @@ export async function middleware(request: NextRequest) {
   // APIs authenticate themselves; skip Supabase getUser here (saves a round-trip per request).
   if (pathname.startsWith('/api/')) {
     return NextResponse.next();
+  }
+
+  if (!WHATSAPP_ENABLED && pathname.startsWith('/whatsapp')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   if (

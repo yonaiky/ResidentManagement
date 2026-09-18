@@ -28,7 +28,7 @@ export function mergeTicketListScope(
   auth: AuthTenantUser
 ): Record<string, unknown> {
   const scoped = mergeTenantWhere(where, auth.ctx);
-  if (isTechnician(auth.ctx.membershipRole)) {
+  if (isTechnician(auth.ctx.effectiveRole)) {
     return { ...scoped, assignedToId: auth.userId };
   }
   return scoped;
@@ -38,7 +38,7 @@ export function canAccessTicket(
   ticket: { assignedToId: string | null },
   auth: AuthTenantUser
 ): boolean {
-  if (!isTechnician(auth.ctx.membershipRole)) {
+  if (!isTechnician(auth.ctx.effectiveRole)) {
     return true;
   }
   return ticket.assignedToId === auth.userId;

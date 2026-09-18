@@ -19,6 +19,7 @@ import {
   Truck,
   Activity,
 } from "lucide-react";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 export type UserRole = "admin" | "manager" | "user" | string;
 
@@ -146,13 +147,17 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
         description: "Repositorio",
         managerOrAdmin: true,
       },
-      {
-        href: "/whatsapp",
-        label: "WhatsApp",
-        icon: MessageCircle,
-        description: "Notificaciones",
-        badge: "Live",
-      },
+      ...(WHATSAPP_ENABLED
+        ? [
+            {
+              href: "/whatsapp",
+              label: "WhatsApp",
+              icon: MessageCircle,
+              description: "Notificaciones",
+              badge: "Live",
+            },
+          ]
+        : []),
     ],
   },
   {

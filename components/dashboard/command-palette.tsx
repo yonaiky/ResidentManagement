@@ -28,6 +28,7 @@ import {
 import { useTheme } from "next-themes";
 import { useAuthUserStore } from "@/store/auth-user-store";
 import { isTechnician } from "@/lib/roles";
+import { WHATSAPP_ENABLED } from "@/lib/features";
 
 const allPages = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -38,7 +39,9 @@ const allPages = [
   { href: "/reports", label: "Reportes", icon: BarChart3 },
   { href: "/tickets", label: "Mantenimiento", icon: Wrench },
   { href: "/parking", label: "Parqueos", icon: Car },
-  { href: "/whatsapp", label: "WhatsApp", icon: MessageCircle },
+  ...(WHATSAPP_ENABLED
+    ? [{ href: "/whatsapp", label: "WhatsApp", icon: MessageCircle }]
+    : []),
   { href: "/settings", label: "Configuración", icon: Settings },
 ];
 

@@ -19,6 +19,13 @@ export type TenantContext = {
   propertyId: string | null;
   membershipRole: string;
   organizationRole: string | null;
+  /**
+   * Role that every authorization decision must use. The organization role
+   * overrides the tenant membership role when the user belongs to an
+   * organization, so checking `membershipRole` directly can grant access that
+   * `requireTenantAuth` would have denied.
+   */
+  effectiveRole: string;
   userId: string;
   isPlatformAdmin: boolean;
 };

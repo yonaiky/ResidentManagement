@@ -2,8 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
 import { serializeUnitDetail } from "@/lib/tenant/serialize";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import { unitStatusSchema, unitTypeSchema } from "@/lib/validation/enums";
+import { optionalShortText, shortText } from "@/lib/validation/common";
 
 type RouteContext = { params: { id: string } };
+
+// The route already normalizes "" and null into null for the numeric fields, so
+// they stay loose here and only the enum-backed columns are constrained.
+const patchUnitSchema = z.object({
+  code: shortText.optional(),
+  unitType: unitTypeSchema.optional(),
+  status: unitStatusSchema.optional(),
+  structureId: z.string().min(1).nullable().optional(),
+  floor: z.union([z.coerce.number().int(), z.null(), z.literal("")]).optional(),
+  bedrooms: z
+    .union([z.coerce.number().int().nonnegative(), z.null(), z.literal("")])
+    .optional(),
+  areaSqm: z
+    .union([z.coerce.number().nonnegative(), z.null(), z.literal("")])
+    .optional(),
+  note: optionalShortText.nullable().optional(),
+});
 
 const unitInclude = {
   structure: { select: { name: true } },
@@ -36,7 +57,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const auth = await requireTenantManager();
   if (auth instanceof NextResponse) return auth;
 
-  const body = await request.json();
+  const parsed = await parseJsonBody(request, patchUnitSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
+
   const existing = await prisma.unit.findFirst({
     where: { id: params.id, property: { tenantId: auth.ctx.tenantId } },
   });

@@ -11,9 +11,25 @@ import {
 import { generateTicketNumber } from "@/lib/tickets/number";
 import { computeSlaDueAt } from "@/lib/tickets/sla";
 import { serializeTicketListItem } from "@/lib/tickets/serialize";
-import type { CreateTicketInput } from "@/lib/tickets/types";
 import { resolveOrganizationId } from "@/lib/finance/org";
 import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/validation/http";
+import {
+  ticketCategorySchema,
+  ticketPrioritySchema,
+} from "@/lib/validation/enums";
+import { optionalLongText, shortText } from "@/lib/validation/common";
+
+const createTicketSchema = z.object({
+  title: shortText,
+  description: optionalLongText.min(1),
+  category: ticketCategorySchema,
+  priority: ticketPrioritySchema.optional(),
+  location: shortText.nullable().optional(),
+  residentId: z.coerce.number().int().positive().nullable().optional(),
+  providerId: z.string().min(1).nullable().optional(),
+});
 
 const ticketInclude = {
   resident: true,
@@ -59,7 +75,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  if (isTechnician(auth.ctx.membershipRole)) {
+  if (isTechnician(auth.ctx.effectiveRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -67,9 +83,8 @@ export async function POST(request: NextRequest) {
   if (org instanceof NextResponse) return org;
 
   try {
-    const body = (await request.json()) as CreateTicketInput & {
-      providerId?: string | null;
-    };
+    const parsed = await parseJsonBody(request, createTicketSchema);
+    if (!parsed.ok) return parsed.response;
     const {
       title,
       description,
@@ -78,14 +93,7 @@ export async function POST(request: NextRequest) {
       location,
       residentId,
       providerId,
-    } = body;
-
-    if (!title?.trim() || !description?.trim() || !category) {
-      return NextResponse.json(
-        { error: "title, description and category are required" },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     if (residentId != null) {
       const resident = await prisma.resident.findFirst({

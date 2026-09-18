@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantAuth, requireTenantManager } from "@/lib/tenant/auth";
 import { resolveOrganizationId } from "@/lib/finance/org";
 import { emitOpsEvent, OPS_EVENTS } from "@/lib/operations/events";
+import { parseInput } from "@/lib/validation/http";
+import { documentVisibilitySchema } from "@/lib/validation/enums";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   const items = raw.filter((d) =>
-    canViewDocument(d.visibility, auth.ctx.membershipRole, auth.ctx.isPlatformAdmin)
+    canViewDocument(d.visibility, auth.ctx.effectiveRole, auth.ctx.isPlatformAdmin)
   );
 
   return NextResponse.json({ items, total, page, pageSize });
@@ -79,7 +81,12 @@ export async function POST(request: NextRequest) {
     const name = String(form.get("name") || "").trim();
     const category = String(form.get("category") || "internal").trim();
     const description = String(form.get("description") || "").trim() || null;
-    const visibility = String(form.get("visibility") || "ADMINS");
+    const parsedVisibility = parseInput(
+      documentVisibilitySchema,
+      String(form.get("visibility") || "ADMINS")
+    );
+    if (!parsedVisibility.ok) return parsedVisibility.response;
+    const visibility = parsedVisibility.data;
     const replacesId = String(form.get("replacesId") || "") || null;
 
     if (!(file instanceof File) || !name) {

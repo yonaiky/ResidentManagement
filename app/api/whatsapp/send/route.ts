@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WhatsAppService, DEFAULT_WHATSAPP_CONFIG } from '@/lib/whatsapp';
 import { requireTenantManager } from '@/lib/tenant/auth';
 import { prisma } from '@/lib/prisma';
+import { WHATSAPP_ENABLED } from '@/lib/features';
+import { whatsappDisabledResponse } from '../disabled';
 
 export async function POST(request: NextRequest) {
+  if (!WHATSAPP_ENABLED) return whatsappDisabledResponse();
+
   try {
     const auth = await requireTenantManager();
     if (auth instanceof NextResponse) return auth;

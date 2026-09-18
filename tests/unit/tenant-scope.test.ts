@@ -10,6 +10,7 @@ describe("mergeTenantWhere", () => {
       propertyId: null,
       membershipRole: "user",
       organizationRole: null,
+      effectiveRole: "user",
       userId: "u1",
       isPlatformAdmin: false,
     });
@@ -25,6 +26,7 @@ describe("mergeTenantWhere", () => {
         propertyId: null,
         membershipRole: "user",
         organizationRole: null,
+        effectiveRole: "user",
         userId: "u1",
         isPlatformAdmin: false,
       }

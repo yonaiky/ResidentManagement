@@ -63,7 +63,7 @@ export async function PATCH(
 ) {
   const auth = await requireTicketAuth();
   if (auth instanceof NextResponse) return auth;
-  if (isTechnician(auth.ctx.membershipRole)) {
+  if (isTechnician(auth.ctx.effectiveRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
